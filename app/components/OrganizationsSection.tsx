@@ -46,11 +46,11 @@ const OrganizationsSection: React.FC<OrganizationsSectionProps> = ({ user }) => 
       setLoading(false);
     }
   }
-  function getOwnerName(owner) {
+  function getOwnerName(owner: any): string {
     if (!owner || typeof owner !== "string" || owner.trim() === "") return "-";
     return owner;
   }
-  async function handleSaveEdit(orgId) {
+  async function handleSaveEdit(orgId: string) {
     setLoading(true);
     setError("");
     try {
