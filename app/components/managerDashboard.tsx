@@ -85,14 +85,10 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
   const fetchDailyStats = async () => {
     setLoading(true);
     try {
-      // Calculate geschaefts_tag at midnight UTC
-      const businessDay = new Date(selectedDate);
-      const businessDayUTC = new Date(Date.UTC(
-        businessDay.getFullYear(),
-        businessDay.getMonth(),
-        businessDay.getDate(),
-        0, 0, 0, 0
-      ));
+      // Parse selectedDate as UTC directly (selectedDate is in YYYY-MM-DD format)
+      // Split the date string and create UTC date to avoid timezone issues
+      const [year, month, day] = selectedDate.split('-').map(Number);
+      const businessDayUTC = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
       
       const res = await fetch(
         `/api/abrechnungen?restaurantId=${user.restaurantId}&geschaefts_tag=${businessDayUTC.toISOString()}`

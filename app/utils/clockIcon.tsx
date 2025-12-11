@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 
-const CLOCK_SIZE = 32; // px
+const CLOCK_SIZE = 38.4; // px (20% bigger than 32px)
 const CENTER = CLOCK_SIZE / 2;
 const HAND_LENGTHS = {
 	hour: CLOCK_SIZE * 0.25,
@@ -42,7 +42,7 @@ const ClockIcon: React.FC<{ className?: string }> = ({ className }) => {
 			   {/* 12 dots for hours */}
 			   {Array.from({ length: 12 }).map((_, i) => {
 				   const angle = (i * 30 - 90) * Math.PI / 180;
-				   const dotRadius = 1.5;
+				   const dotRadius = 0.5;
 				   const dotDist = CLOCK_SIZE / 2 - 5;
 				   const x = CENTER + dotDist * Math.cos(angle);
 				   const y = CENTER + dotDist * Math.sin(angle);
@@ -57,7 +57,7 @@ const ClockIcon: React.FC<{ className?: string }> = ({ className }) => {
 				   x2={hourHand.x}
 				   y2={hourHand.y}
 				   stroke="#fff"
-				   strokeWidth={3}
+				   strokeWidth={0.5}
 				   strokeLinecap="round"
 			   />
 			   {/* Minute hand */}
@@ -67,11 +67,11 @@ const ClockIcon: React.FC<{ className?: string }> = ({ className }) => {
 				   x2={minuteHand.x}
 				   y2={minuteHand.y}
 				   stroke="#fff"
-				   strokeWidth={2}
+				   strokeWidth={0.5}
 				   strokeLinecap="round"
 			   />
 			   {/* Center dot */}
-			   <circle cx={CENTER} cy={CENTER} r={2} fill="#fff" />
+			   <circle cx={CENTER} cy={CENTER} r={0.5} fill="#fff" />
 		   </svg>
 	);
 };
