@@ -65,7 +65,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ abrec
 
 
 // DELETE: Remove a single abrechnung by ID
-export async function DELETE(request: Request, context: { params: Promise<{ abrechnungId: string;}> }) {
+export async function DELETE(request: Request, context: { params: Promise<{ abrechnung: string;}> }) {
   const params = await context.params;
   await connect();
   const { abrechnung } = params;
