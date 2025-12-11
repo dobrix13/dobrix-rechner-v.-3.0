@@ -12,7 +12,7 @@
 ### Steps:
 1. **Create `.env.production` file:**
    ```env
-   MONGODB_URI=mongodb+srv://dobrixglobal_db_user:LJs1lzUeEDkHGgor@clustertina.vwjdgqi.mongodb.net/dobrix_db
+   MONGODB_URI=
    ```
 
 2. **Push code to GitHub:**
@@ -86,7 +86,7 @@
 
 3. **Create `.env.production` on server:**
    ```env
-   MONGODB_URI=mongodb+srv://dobrixglobal_db_user:LJs1lzUeEDkHGgor@clustertina.vwjdgqi.mongodb.net/dobrix_db
+   MONGODB_URI=******
    NODE_ENV=production
    ```
 

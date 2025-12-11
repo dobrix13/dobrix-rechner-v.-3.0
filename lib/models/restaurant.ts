@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { IOrganization } from './betrieb';
+import { IOrganization } from './Organization';
 
 export interface IRestaurant extends Document {
     name: string;
