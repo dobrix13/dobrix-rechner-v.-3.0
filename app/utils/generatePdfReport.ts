@@ -51,7 +51,7 @@ export function generatePdfReport(data: ReportData) {
 	currentY += 10;
 	doc.setFontSize(12);
 	doc.setFont('helvetica', 'normal');
-	doc.text(`Tagesreport vom ${data.geschaeftsDatum}`, pageWidth / 2, currentY, { align: 'center' });
+	doc.text(`Kassenbericht Tagesumsatz vom ${data.geschaeftsDatum}`, pageWidth / 2, currentY, { align: 'center' });
 
 	// Table with abrechnungen
 	currentY += 10;
@@ -109,7 +109,7 @@ export function generatePdfReport(data: ReportData) {
 	
 	doc.setFontSize(12);
 	doc.setFont('helvetica', 'bold');
-	doc.text('Tagessummen:', margin, currentY);
+	doc.text('Gesamt:', margin, currentY);
 	
 	currentY += 8;
 	doc.setFont('helvetica', 'normal');
@@ -128,19 +128,14 @@ export function generatePdfReport(data: ReportData) {
 	currentY = 260; // Fixed position near bottom of page
 	
 	doc.setFontSize(10);
-	doc.text('Manager Unterschrift:', margin, currentY);
-	doc.line(margin + 45, currentY, margin + 100, currentY); // Signature line
-	
-	currentY += 5;
-	doc.setFontSize(8);
-	doc.text('Datum:', margin, currentY);
-	doc.line(margin + 15, currentY, margin + 60, currentY); // Date line
+	doc.text('Unterschrift Schichtleiter:', margin, currentY);
+	doc.line(margin + 55, currentY, margin + 120, currentY); // Signature line
 
 	// Footer with generation timestamp
 	doc.setFontSize(8);
 	doc.setTextColor(128, 128, 128);
 	const timestamp = new Date().toLocaleString('de-DE');
-	doc.text(`Erstellt am ${timestamp}`, pageWidth / 2, 287, { align: 'center' });
+	doc.text(`Erstellt am ${timestamp} with Dobrix-Rechner`, pageWidth / 2, 287, { align: 'center' });
 
 	// Save the PDF
 	const filename = `Tagesreport_${data.restaurantName}_${data.geschaeftsDatum.replace(/\./g, '-')}.pdf`;
