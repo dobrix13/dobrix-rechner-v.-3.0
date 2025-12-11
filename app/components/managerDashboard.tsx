@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { RestaurantIcon, AbrechnungIcon, UserIcon } from "./adminIcons";
 import AbrechnungenSection from "./AbrechnungenSection";
 import AbrechnungForm from "./abrechnungForm";
+import { generatePdfReport } from "../utils/generatePdfReport";
 
 const TABS = [
   { key: "tagesreport", icon: <RestaurantIcon className="w-7 h-7" />, label: "Tagesreport" },
@@ -39,6 +40,8 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
   const [selectedWaiter, setSelectedWaiter] = useState<string>("");
   const [restaurantWaiters, setRestaurantWaiters] = useState<any[]>([]);
   const [abrechnungRefresh, setAbrechnungRefresh] = useState<number>(0);
+  const [restaurantInfo, setRestaurantInfo] = useState<any>(null);
+  const [organizationInfo, setOrganizationInfo] = useState<any>(null);
 
   // Validate manager has restaurantId
   if (!user.restaurantId) {
@@ -49,10 +52,12 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
     );
   }
 
-  // Fetch waiters for the restaurant
+  // Fetch waiters and restaurant info
   useEffect(() => {
     if (user.restaurantId && user.organizationId) {
       fetchWaiters();
+      fetchRestaurantInfo();
+      fetchOrganizationInfo();
     }
   }, [user.restaurantId, user.organizationId]);
 
@@ -202,9 +207,72 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
     }
   };
 
+  const fetchRestaurantInfo = async () => {
+    try {
+      const res = await fetch(`/api/organizations/${user.organizationId}/restaurants/${user.restaurantId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setRestaurantInfo(data);
+      }
+    } catch (error: any) {
+      console.error("Error fetching restaurant info:", error);
+    }
+  };
+
+  const fetchOrganizationInfo = async () => {
+    try {
+      const res = await fetch(`/api/organizations/${user.organizationId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setOrganizationInfo(data);
+      }
+    } catch (error: any) {
+      console.error("Error fetching organization info:", error);
+    }
+  };
+
   const handleExportPDF = () => {
-    // Placeholder for PDF export functionality
-    alert("PDF Export wird in Kürze verfügbar sein.");
+    if (!dailyStats || dailyStats.count === 0) {
+      alert("Keine Daten zum Exportieren.");
+      return;
+    }
+
+    if (!restaurantInfo || !organizationInfo) {
+      alert("Restaurant- oder Firmendaten werden geladen...");
+      return;
+    }
+
+    // Format date for display (e.g., "10.12.2025")
+    const dateObj = new Date(selectedDate);
+    const formattedDate = dateObj.toLocaleDateString('de-DE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+
+    // Prepare data for PDF
+    const reportData = {
+      firmName: organizationInfo.name || "N/A",
+      restaurantName: restaurantInfo.name || "N/A",
+      geschaeftsDatum: formattedDate,
+      abrechnungen: dailyAbrechnungen.map(abr => ({
+        _id: abr._id,
+        waiter: {
+          name: userNames[abr.userId] || "N/A"
+        },
+        umsatz: abr.totalSales || 0,
+        bargeld: abr.salesInCash || 0,
+        team_tip: abr.teamTips || 0,
+        date: abr.date
+      })),
+      totals: {
+        umsatz: dailyStats.totalSales,
+        bargeld: dailyStats.totalCash,
+        teamTip: dailyStats.totalTeamTips
+      }
+    };
+
+    generatePdfReport(reportData);
   };
 
   return (
