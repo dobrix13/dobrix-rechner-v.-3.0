@@ -105,23 +105,25 @@ const AbrechnungSchema = new Schema<IAbrechnung>(
 	{ timestamps: true }
 );
 
-// Pre-save hook: Calculate geschaefts_tag based on current time
-// If time is between 00:00 and 05:59, set geschaefts_tag to previous day (midnight UTC)
-// If time is 06:00 or later, set geschaefts_tag to current day (midnight UTC)
+// Pre-save hook: Calculate geschaefts_tag based on LOCAL time
+// If LOCAL time is between 00:00 and 05:59, set geschaefts_tag to previous day (midnight UTC)
+// If LOCAL time is 06:00 or later, set geschaefts_tag to current day (midnight UTC)
 AbrechnungSchema.pre('save', function() {
 	const now = this.date || new Date();
-	const hours = now.getUTCHours();
 	
-	// Create a date at midnight UTC for comparison
-	const businessDay = new Date(Date.UTC(
-		now.getUTCFullYear(),
-		now.getUTCMonth(),
-		now.getUTCDate(),
-		0, 0, 0, 0
-	));
+	// Get LOCAL hours (not UTC) for business day logic
+	const localHours = now.getHours();
 	
-	// If before 06:00 UTC, subtract one day
-	if (hours < 6) {
+	// Get the LOCAL date components
+	const localYear = now.getFullYear();
+	const localMonth = now.getMonth();
+	const localDate = now.getDate();
+	
+	// Create a date at midnight UTC for the local date
+	const businessDay = new Date(Date.UTC(localYear, localMonth, localDate, 0, 0, 0, 0));
+	
+	// If LOCAL time is before 06:00, subtract one day
+	if (localHours < 6) {
 		businessDay.setUTCDate(businessDay.getUTCDate() - 1);
 	}
 	
