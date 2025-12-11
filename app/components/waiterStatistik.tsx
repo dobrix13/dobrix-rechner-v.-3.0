@@ -53,7 +53,7 @@ const WaiterStatistik: React.FC<WaiterStatistikProps> = ({ user, onClose }) => {
         const userAbrechnungen = data.filter((ab: any) => ab.userId === user.userId);
         setAbrechnungen(userAbrechnungen);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching abrechnungen:", error);
     } finally {
       setLoading(false);

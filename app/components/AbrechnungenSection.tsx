@@ -65,7 +65,7 @@ const AbrechnungenSection: React.FC<AbrechnungenSectionProps> = ({ user, filterB
         const error = await res.json();
         alert(error.error || "Fehler beim Speichern");
       }
-    } catch (err) {
+    } catch (err: any) {
       alert("Fehler beim Speichern");
     }
   };
@@ -81,7 +81,7 @@ const AbrechnungenSection: React.FC<AbrechnungenSectionProps> = ({ user, filterB
         const error = await res.json();
         alert(error.error || "Fehler beim Löschen");
       }
-    } catch (err) {
+    } catch (err: any) {
       alert("Fehler beim Löschen");
     }
   };

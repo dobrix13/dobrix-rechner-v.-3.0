@@ -14,6 +14,7 @@ interface ManagerDashboardProps {
     _id: string;
     name: string;
     role: string;
+    email?: string;
     restaurantId?: string;
     organizationId?: string;
   };
@@ -76,7 +77,7 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
           setSelectedWaiter(waiters[0]._id);
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching waiters:", error);
     }
   };
@@ -112,7 +113,7 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
             });
             setUserNames(namesMap);
           }
-        } catch (err) {
+        } catch (err: any) {
           console.error('Error fetching user names:', err);
         }
         
@@ -130,7 +131,7 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
         setDailyStats(null);
         setDailyAbrechnungen([]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Fehler beim Laden der Tagesstatistik:", error);
       setDailyStats(null);
       setDailyAbrechnungen([]);
@@ -169,7 +170,7 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
         const error = await res.json();
         alert(error.error || "Fehler beim Speichern");
       }
-    } catch (err) {
+    } catch (err: any) {
       alert("Fehler beim Speichern");
     }
   };
@@ -184,7 +185,7 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
         const error = await res.json();
         alert(error.error || "Fehler beim Löschen");
       }
-    } catch (err) {
+    } catch (err: any) {
       alert("Fehler beim Löschen");
     }
   };
@@ -414,7 +415,7 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
 
             {activeTab === "abrechnungen" && (
               <AbrechnungenSection 
-                user={{ ...user, role: "manager" }} 
+                user={{ ...user, role: "manager", email: user.email || "" }} 
                 filterByRestaurant={user.restaurantId}
               />
             )}

@@ -26,7 +26,7 @@ const RestaurantsSection: React.FC<RestaurantsSectionProps> = ({ user }) => {
   const [editRestFloat, setEditRestFloat] = useState<string>("");
   const [editRestTip, setEditRestTip] = useState<string>("");
 
-  async function handleCreateRestaurant(e) {
+  async function handleCreateRestaurant(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedOrg || !newRestName || !user?._id) return;
     setLoading(true);
@@ -48,7 +48,7 @@ const RestaurantsSection: React.FC<RestaurantsSectionProps> = ({ user }) => {
     }
   }
 
-  async function handleSaveEdit(restId, orgId) {
+  async function handleSaveEdit(restId: string, orgId: string) {
     setLoading(true);
     setError("");
     try {
@@ -66,7 +66,7 @@ const RestaurantsSection: React.FC<RestaurantsSectionProps> = ({ user }) => {
     }
   }
 
-  async function handleDeleteRestaurant(restId, orgId) {
+  async function handleDeleteRestaurant(restId: string, orgId: string) {
     if (!window.confirm("Restaurant wirklich löschen?")) return;
     setLoading(true);
     setError("");
@@ -155,7 +155,8 @@ const RestaurantsSection: React.FC<RestaurantsSectionProps> = ({ user }) => {
           <div className="w-full">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 w-full">
               {restaurants.map((rest, idx) => {
-                const org = organizations.find(o => o._id === (rest.organization?._id || rest.organization));
+                const orgId = typeof rest.organization === 'string' ? rest.organization : rest.organization?._id;
+                const org = organizations.find(o => o._id === orgId);
                 return (
                   <div key={rest._id || idx} className="border-2 border-cyan-400/30 bg-cyan-900/25 backdrop-blur-sm rounded-xl shadow-md p-4 flex flex-col gap-2 text-white hover:border-cyan-400/50 transition-all duration-200">
                     <div className="flex flex-col gap-1">
@@ -210,7 +211,7 @@ const RestaurantsSection: React.FC<RestaurantsSectionProps> = ({ user }) => {
                           <button
                             className="px-3 py-1 rounded border-2 border-cyan-400/40 bg-cyan-900/30 backdrop-blur-sm text-cyan-100 font-bold hover:bg-cyan-800/40 hover:border-cyan-400/60 text-xs transition-all duration-200"
                             style={{ fontSize: "0.95rem" }}
-                            onClick={() => handleSaveEdit(rest._id, rest.organization?._id || rest.organization)}
+                            onClick={() => handleSaveEdit(rest._id, orgId || "")}
                             disabled={loading || !editRestName}
                           >
                             Save
@@ -241,7 +242,7 @@ const RestaurantsSection: React.FC<RestaurantsSectionProps> = ({ user }) => {
                           <button
                             className="px-3 py-1 rounded border-2 border-red-400/40 bg-red-900/30 backdrop-blur-sm text-red-100 font-bold hover:bg-red-800/40 hover:border-red-400/60 text-xs transition-all duration-200"
                             style={{ fontSize: "0.95rem" }}
-                            onClick={() => handleDeleteRestaurant(rest._id, rest.organization?._id || rest.organization)}
+                            onClick={() => handleDeleteRestaurant(rest._id, orgId || "")}
                             disabled={loading}
                           >
                             Delete

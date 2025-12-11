@@ -68,7 +68,7 @@ const CallToActionBlock: React.FC<CallToActionBlockProps> = ({ user, dayName, da
             });
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching today's abrechnung:", error);
       } finally {
         setLoading(false);
@@ -185,7 +185,7 @@ const CallToActionBlock: React.FC<CallToActionBlockProps> = ({ user, dayName, da
               <button
                 className="px-8 py-3 rounded-lg border-2 border-cyan-400/40 bg-cyan-900/25 text-cyan-100 font-semibold text-lg hover:bg-cyan-800/40 hover:border-cyan-400/60 transition-all duration-200 backdrop-blur-sm animate-slide-in-2"
                 style={{ animationDelay: "0.2s" }}
-                onClick={onAbrechnungClick}
+                onClick={() => onAbrechnungClick && onAbrechnungClick()}
               >
                 Abrechnung
               </button>

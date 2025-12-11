@@ -78,7 +78,7 @@ export default function Home() {
       {/* Main */}
       <main className="flex min-h-screen w-full max-w-5xl flex-col items-center justify-between pt-0 pb-32 px-0 sm:px-4 sm:items-start mx-auto">
         {user?.role === "admin" && <AdminDashboard user={user} />}
-        {user?.role === "manager" && <ManagerDashboard user={user} />}
+        {user?.role === "manager" && user._id && <ManagerDashboard user={{ ...user, _id: user._id }} />}
         {user?.role === "kellner" && !showAbrechnungForm && !showStatistik && (
           <CallToActionBlock
             user={user}
@@ -93,7 +93,7 @@ export default function Home() {
             onStatistikClick={() => setShowStatistik(true)}
           />
         )}
-        {user?.role === "kellner" && showAbrechnungForm && (
+        {user?.role === "kellner" && showAbrechnungForm && user.restaurantId && user.organizationId && (
           <AbrechnungForm
             user={user}
             restaurantId={user.restaurantId}
@@ -124,12 +124,12 @@ export default function Home() {
           setShowUserProfile(true);
         }}
       />
-      {user && (
+      {user && user._id && (
         <UserProfile
-          user={user}
+          user={user as any}
           show={showUserProfile}
           onClose={() => setShowUserProfile(false)}
-          onUpdate={(updatedUser) => {
+          onUpdate={(updatedUser: any) => {
             setUser({ ...user, ...updatedUser });
           }}
         />

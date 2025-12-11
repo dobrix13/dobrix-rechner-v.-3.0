@@ -40,7 +40,7 @@ const OrganizationsSection: React.FC<OrganizationsSectionProps> = ({ user }) => 
       setOrgs(prev => [...prev, data]);
       setNewOrgName("");
       setNewOrgOwner("");
-    } catch (e) {
+    } catch (e: any) {
       setError("Fehler beim Erstellen der Organisation");
     } finally {
       setLoading(false);
@@ -57,7 +57,7 @@ const OrganizationsSection: React.FC<OrganizationsSectionProps> = ({ user }) => 
       await apiPatch(`/api/organizations/${orgId}?userId=${user._id}`, { name: editName, owner: editOwner });
       setRefresh(true);
       setEditOrgId(null);
-    } catch (e) {
+    } catch (e: any) {
       setError("Fehler beim Speichern der Organisation");
     } finally {
       setLoading(false);
@@ -69,7 +69,7 @@ const OrganizationsSection: React.FC<OrganizationsSectionProps> = ({ user }) => 
     try {
       await apiDelete(`/api/organizations/${orgId}?userId=${user._id}`);
       setRefresh(true);
-    } catch (e) {
+    } catch (e: any) {
       setError("Fehler beim Löschen der Organisation");
     } finally {
       setLoading(false);
@@ -174,7 +174,7 @@ const OrganizationsSection: React.FC<OrganizationsSectionProps> = ({ user }) => 
                         onClick={() => {
                           setEditOrgId(org._id);
                           setEditName(org.name);
-                          setEditOwner(org.owner);
+                          setEditOwner(org.owner || "");
                         }}
                         disabled={loading}
                       >Bearbeiten</button>

@@ -17,7 +17,7 @@ const TABS = [
   { key: "abrechnungen", icon: <AbrechnungIcon className="w-7 h-7" />, label: "Abrechnungen" },
 ];
 
-export default function AdminDashboard({ user }) {
+export default function AdminDashboard({ user }: { user: any }) {
   const [activeTab, setActiveTab] = useState(TABS[0].key);
   // Accept userId as _id for compatibility
   const userObj = user && typeof user === 'object'

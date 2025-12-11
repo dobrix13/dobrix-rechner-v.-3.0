@@ -2,6 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IAbrechnung extends Document {
 	restaurant: mongoose.Types.ObjectId; // Referenz zum Restaurant
+	organization: mongoose.Types.ObjectId; // Referenz zur Organisation
 	userId: mongoose.Types.ObjectId;             // kellner/Benutzer, der die Abrechnung erstellt hat
 	date: Date;                                  // Datum der Abrechnung
 	geschaefts_tag: Date;                        // Geschäftstag (berechnet: vor 06:00 = Vortag, ab 06:00 = aktueller Tag)
@@ -18,7 +19,7 @@ export interface IAbrechnung extends Document {
 	finalAmountInCash: number;                   // endbestand der kellnergeldboitel in bar
 }
 
-const AbrechnungSchema: Schema<IAbrechnung> = new Schema<IAbrechnung>(
+const AbrechnungSchema = new Schema<IAbrechnung>(
 	{
 		restaurant: {
 			type: Schema.Types.ObjectId,

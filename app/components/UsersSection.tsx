@@ -15,7 +15,7 @@ const UsersSection: React.FC<UsersSectionProps> = ({ user }) => {
     const [editUserId, setEditUserId] = useState<string | null>(null);
     const [editUserName, setEditUserName] = useState<string>("");
     const [editUserEmail, setEditUserEmail] = useState<string>("");
-    const [editUserRole, setEditUserRole] = useState<User["role"]>("");
+    const [editUserRole, setEditUserRole] = useState<User["role"] | "">("");
     const [editUserOrg, setEditUserOrg] = useState<string>("");
     const [editUserRest, setEditUserRest] = useState<string>("");
     const [userRefresh, setUserRefresh] = useState<boolean>(false);
@@ -35,7 +35,7 @@ const UsersSection: React.FC<UsersSectionProps> = ({ user }) => {
       fetchAllRestaurants();
     }, [organizations]);
     // Create a map for quick lookup
-    const restaurantMap = {};
+    const restaurantMap: { [key: string]: string } = {};
     allRestaurants.forEach(rest => { restaurantMap[rest._id] = rest.name; });
     const [selectedOrg, setSelectedOrg] = useState<string>("");
     const restaurants = useRestaurants(selectedOrg) as Restaurant[];
@@ -44,11 +44,11 @@ const UsersSection: React.FC<UsersSectionProps> = ({ user }) => {
     const [newUserName, setNewUserName] = useState<string>("");
     const [newUserEmail, setNewUserEmail] = useState<string>("");
     const [newUserPassword, setNewUserPassword] = useState<string>("");
-    const [newUserRole, setNewUserRole] = useState<User["role"]>("");
+    const [newUserRole, setNewUserRole] = useState<User["role"] | "">("");
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string>("");
 
-    async function handleSaveEditUser(userId) {
+    async function handleSaveEditUser(userId: string) {
       setLoading(true);
       setError("");
       try {
@@ -61,27 +61,27 @@ const UsersSection: React.FC<UsersSectionProps> = ({ user }) => {
         });
         setEditUserId(null);
         setUserRefresh(r => !r);
-      } catch (e) {
+      } catch (e: any) {
         setError("Fehler beim Speichern des Benutzers");
       } finally {
         setLoading(false);
       }
     }
 
-    async function handleDeleteUser(userId) {
+    async function handleDeleteUser(userId: string) {
       setLoading(true);
       setError("");
       try {
         await apiDelete(`/api/users?id=${encodeURIComponent(userId)}`);
         setUserRefresh(r => !r);
-      } catch (e) {
+      } catch (e: any) {
         setError("Fehler beim Löschen des Benutzers");
       } finally {
         setLoading(false);
       }
     }
 
-    async function handleCreateUser(e) {
+    async function handleCreateUser(e: React.FormEvent) {
       e.preventDefault();
       if (!newUserName || !newUserEmail || !newUserPassword || !selectedOrg || (!selectedRest && (newUserRole === "kellner" || newUserRole === "manager")) || !newUserRole) {
         console.log("Form validation failed", {
@@ -116,7 +116,7 @@ const UsersSection: React.FC<UsersSectionProps> = ({ user }) => {
         setSelectedOrg("");
         setSelectedRest("");
         setUserRefresh(r => !r);
-      } catch (e) {
+      } catch (e: any) {
         setError("Fehler beim Erstellen des Benutzers: " + (e.message || e));
       } finally {
         setLoading(false);
@@ -141,7 +141,7 @@ const UsersSection: React.FC<UsersSectionProps> = ({ user }) => {
           ]}
           getOptionValue={opt => opt.value}
           getOptionLabel={opt => opt.label}
-          onChange={setNewUserRole}
+          onChange={(val) => setNewUserRole(val as User["role"])}
           required
           className="min-w-[120px] max-w-[220px] border-cyan-400 focus:ring-cyan-500"
         />
@@ -267,7 +267,7 @@ const UsersSection: React.FC<UsersSectionProps> = ({ user }) => {
                       ))}
                     </select>
                   ) : (
-                    u.organization?.name || u.organization || '-'
+                    typeof u.organization === 'string' ? u.organization : (u.organization?.name || '-')
                   )}
                 </td>
                 <td className="px-3 py-2">
@@ -284,7 +284,7 @@ const UsersSection: React.FC<UsersSectionProps> = ({ user }) => {
                       ))}
                     </select>
                   ) : (
-                    u.restaurant?.name || u.restaurant || '-'
+                    typeof u.restaurant === 'string' ? u.restaurant : (u.restaurant?.name || '-')
                   )}
                 </td>
                 <td className="px-3 py-2 flex gap-2 justify-end">
@@ -300,8 +300,8 @@ const UsersSection: React.FC<UsersSectionProps> = ({ user }) => {
                         setEditUserName(u.name);
                         setEditUserEmail(u.email);
                         setEditUserRole(u.role);
-                        setEditUserOrg(u.organization?._id || u.organization || "");
-                        setEditUserRest(u.restaurant?._id || u.restaurant || "");
+                        setEditUserOrg(typeof u.organization === 'string' ? u.organization : (u.organization?._id || ""));
+                        setEditUserRest(typeof u.restaurant === 'string' ? u.restaurant : (u.restaurant?._id || ""));
                       }}>Edit</button>
                       <button className="px-2 py-1 rounded border-2 border-red-400/40 bg-red-900/30 backdrop-blur-sm text-red-100 font-normal hover:bg-red-800/40 hover:border-red-400/60 text-xs transition-all duration-200" onClick={() => handleDeleteUser(u._id)} disabled={loading}>Delete</button>
                     </>

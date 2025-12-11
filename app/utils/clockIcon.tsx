@@ -23,7 +23,7 @@ function getHandCoords(angle: number, length: number) {
 	};
 }
 
-const ClockIcon: React.FC = () => {
+const ClockIcon: React.FC<{ className?: string }> = ({ className }) => {
 	const [now, setNow] = useState(new Date());
 
 	useEffect(() => {
@@ -37,7 +37,7 @@ const ClockIcon: React.FC = () => {
 	const minuteHand = getHandCoords(minuteAngle, HAND_LENGTHS.minute);
 
 	return (
-		   <svg width={CLOCK_SIZE} height={CLOCK_SIZE} viewBox={`0 0 ${CLOCK_SIZE} ${CLOCK_SIZE}`}>
+		   <svg width={CLOCK_SIZE} height={CLOCK_SIZE} viewBox={`0 0 ${CLOCK_SIZE} ${CLOCK_SIZE}`} className={className}>
 			   {/* Only 12 dots for hours, no outer circle */}
 			   {/* 12 dots for hours */}
 			   {Array.from({ length: 12 }).map((_, i) => {

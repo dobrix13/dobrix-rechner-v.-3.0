@@ -10,7 +10,7 @@ interface ExistingAbrechnungData {
 }
 
 interface AbrechnungFormProps {
-	user: { name: string; organisation?: string; restaurant?: string; userId?: string };
+	user: { name: string; organisation?: string; restaurant?: string; userId?: string; _id?: string };
 	restaurantId: string;
 	orgId: string;
 	teamTips?: number; // Pass team tips from parent if available
@@ -53,7 +53,7 @@ const AbrechnungForm: React.FC<AbrechnungFormProps> = ({
 						const data = await res.json();
 						setFetchedTeamTip(data.teamTipPercentage ?? 2);
 					}
-				} catch (e) {
+				} catch (e: any) {
 					setFetchedTeamTip(2); // fallback
 				}
 			}
@@ -73,7 +73,7 @@ const AbrechnungForm: React.FC<AbrechnungFormProps> = ({
 						setInitialFloat(data.floatAmount ?? 0);
 						setRestaurantFloat(data.floatAmount ?? 0);
 					}
-				} catch (e) {
+				} catch (e: any) {
 					setInitialFloat(0);
 					setRestaurantFloat(0);
 				}
@@ -196,7 +196,7 @@ const AbrechnungForm: React.FC<AbrechnungFormProps> = ({
 				>
 					<div className="flex flex-col w-full">
 						<h3 className="text-lg font-semibold text-center mb-2 text-cyan-100">
-							Abrechnung eingeben von {user && user.name ? user.name : (user && user._id ? user._id : "")}
+									Abrechnung eingeben von {user && user.name ? user.name : (user && user.userId ? user.userId : "")}
 							<span className="block text-cyan-300 text-base mt-1">
 								Team tip abgabe % ={" "}
 								{teamTipPercent.toLocaleString("de-DE", {
