@@ -6,7 +6,7 @@ import User from '@/lib/models/user';
 
 // Get single organization by ID
 interface RouteParams {
-  params: { organizationId: string };
+  params: Promise<{ organizationId: string }>;
 } 
 export async function GET(request: Request, { params }: RouteParams) {
   const { organizationId } = await params;

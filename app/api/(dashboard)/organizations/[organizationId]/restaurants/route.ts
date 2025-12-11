@@ -3,7 +3,7 @@ import connect from '@/lib/db';
 import Restaurant from '@/lib/models/restaurant';
 import User from '@/lib/models/user';
 
-export async function GET(request: Request, { params }: { params: { organizationId: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ organizationId: string }> }) {
   await connect();
   const { organizationId } = await params;
 
@@ -15,7 +15,7 @@ export async function GET(request: Request, { params }: { params: { organization
   return NextResponse.json(restaurants, { status: 200 });
 }
 
-export async function POST(request: Request, { params }: { params: { organizationId: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ organizationId: string }> }) {
   await connect();
   const { organizationId } = await params;
   const { searchParams } = new URL(request.url);
