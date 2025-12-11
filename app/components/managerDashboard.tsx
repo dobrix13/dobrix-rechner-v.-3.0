@@ -90,12 +90,23 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
       const [year, month, day] = selectedDate.split('-').map(Number);
       const businessDayUTC = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
       
+      console.log('Fetching tagesreport for:', {
+        selectedDate,
+        businessDayUTC: businessDayUTC.toISOString(),
+        parsed: { year, month, day }
+      });
+      
       const res = await fetch(
         `/api/abrechnungen?restaurantId=${user.restaurantId}&geschaefts_tag=${businessDayUTC.toISOString()}`
       );
       
       if (res.ok) {
         const data = await res.json();
+        
+        console.log('Received abrechnungen:', data.length, 'records');
+        if (data.length > 0) {
+          console.log('Sample geschaefts_tag from DB:', data[0].geschaefts_tag);
+        }
         
         // Store abrechnungen for display
         setDailyAbrechnungen(data);
