@@ -85,12 +85,17 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
   const fetchDailyStats = async () => {
     setLoading(true);
     try {
-      // Calculate geschaefts_tag at midnight
+      // Calculate geschaefts_tag at midnight UTC
       const businessDay = new Date(selectedDate);
-      businessDay.setHours(0, 0, 0, 0);
+      const businessDayUTC = new Date(Date.UTC(
+        businessDay.getFullYear(),
+        businessDay.getMonth(),
+        businessDay.getDate(),
+        0, 0, 0, 0
+      ));
       
       const res = await fetch(
-        `/api/abrechnungen?restaurantId=${user.restaurantId}&geschaefts_tag=${businessDay.toISOString()}`
+        `/api/abrechnungen?restaurantId=${user.restaurantId}&geschaefts_tag=${businessDayUTC.toISOString()}`
       );
       
       if (res.ok) {
