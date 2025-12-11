@@ -63,7 +63,7 @@ const OrganizationsSection: React.FC<OrganizationsSectionProps> = ({ user }) => 
       setLoading(false);
     }
   }
-  async function handleDeleteOrg(orgId) {
+  async function handleDeleteOrg(orgId: string) {
     setLoading(true);
     setError("");
     try {
