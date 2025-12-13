@@ -18,9 +18,9 @@ const UsersSection: React.FC<UsersSectionProps> = ({ user }) => {
     const [editUserRole, setEditUserRole] = useState<User["role"] | "">("");
     const [editUserOrg, setEditUserOrg] = useState<string>("");
     const [editUserRest, setEditUserRest] = useState<string>("");
-    const [userRefresh, setUserRefresh] = useState<boolean>(false);
-    const users = useUsers("", "", userRefresh) as User[];
-    const organizations = useOrganizations() as Organization[];
+    const [userRefresh, setUserRefresh] = useState<number>(0);
+    const { users } = useUsers("", "", userRefresh);
+    const { organizations } = useOrganizations();
     const [allRestaurants, setAllRestaurants] = useState<Restaurant[]>([]);
     useEffect(() => {
       async function fetchAllRestaurants() {
@@ -38,8 +38,8 @@ const UsersSection: React.FC<UsersSectionProps> = ({ user }) => {
     const restaurantMap: { [key: string]: string } = {};
     allRestaurants.forEach(rest => { restaurantMap[rest._id] = rest.name; });
     const [selectedOrg, setSelectedOrg] = useState<string>("");
-    const restaurants = useRestaurants(selectedOrg) as Restaurant[];
-    const editRestaurants = useRestaurants(editUserOrg) as Restaurant[];
+    const { restaurants } = useRestaurants(selectedOrg);
+    const { restaurants: editRestaurants } = useRestaurants(editUserOrg);
     const [selectedRest, setSelectedRest] = useState<string>("");
     const [newUserName, setNewUserName] = useState<string>("");
     const [newUserEmail, setNewUserEmail] = useState<string>("");
@@ -60,7 +60,7 @@ const UsersSection: React.FC<UsersSectionProps> = ({ user }) => {
           role: editUserRole
         });
         setEditUserId(null);
-        setUserRefresh(r => !r);
+        setUserRefresh(r => r + 1);
       } catch (e: any) {
         setError("Fehler beim Speichern des Benutzers");
       } finally {
@@ -73,7 +73,7 @@ const UsersSection: React.FC<UsersSectionProps> = ({ user }) => {
       setError("");
       try {
         await apiDelete(`/api/users?id=${encodeURIComponent(userId)}`);
-        setUserRefresh(r => !r);
+        setUserRefresh(r => r + 1);
       } catch (e: any) {
         setError("Fehler beim Löschen des Benutzers");
       } finally {
@@ -115,7 +115,7 @@ const UsersSection: React.FC<UsersSectionProps> = ({ user }) => {
         setNewUserRole("");
         setSelectedOrg("");
         setSelectedRest("");
-        setUserRefresh(r => !r);
+        setUserRefresh(r => r + 1);
       } catch (e: any) {
         setError("Fehler beim Erstellen des Benutzers: " + (e.message || e));
       } finally {

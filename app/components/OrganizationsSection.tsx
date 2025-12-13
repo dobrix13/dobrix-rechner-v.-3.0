@@ -10,25 +10,25 @@ interface OrganizationsSectionProps {
 }
 
 const OrganizationsSection: React.FC<OrganizationsSectionProps> = ({ user }) => {
-  const organizations = useOrganizations() as Organization[];
+  const { organizations, loading: orgsLoading, error: orgsError } = useOrganizations();
   const [newOrgName, setNewOrgName] = useState<string>("");
   const [newOrgOwner, setNewOrgOwner] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
-  const [orgs, setOrgs] = useState<Organization[]>(organizations);
+  const [orgs, setOrgs] = useState<Organization[]>([]);
   const [editOrgId, setEditOrgId] = useState<string | null>(null);
   const [editName, setEditName] = useState<string>("");
   const [editOwner, setEditOwner] = useState<string>("");
-  const [refresh, setRefresh] = useState<boolean>(false);
+  const [refresh, setRefresh] = useState<number>(0);
+  
   useEffect(() => {
-    apiGet<Organization[]>("/api/organizations")
-      .then(data => setOrgs(data));
-  }, []);
+    setOrgs(organizations);
+  }, [organizations]);
+  
   useEffect(() => {
-    if (refresh) {
+    if (refresh > 0) {
       apiGet<Organization[]>("/api/organizations")
-        .then(data => setOrgs(data))
-        .finally(() => setRefresh(false));
+        .then(data => setOrgs(data));
     }
   }, [refresh]);
   async function handleCreateOrg() {
@@ -55,7 +55,7 @@ const OrganizationsSection: React.FC<OrganizationsSectionProps> = ({ user }) => 
     setError("");
     try {
       await apiPatch(`/api/organizations/${orgId}?userId=${user._id}`, { name: editName, owner: editOwner });
-      setRefresh(true);
+      setRefresh(prev => prev + 1);
       setEditOrgId(null);
     } catch (e: any) {
       setError("Fehler beim Speichern der Organisation");
@@ -68,7 +68,7 @@ const OrganizationsSection: React.FC<OrganizationsSectionProps> = ({ user }) => 
     setError("");
     try {
       await apiDelete(`/api/organizations/${orgId}?userId=${user._id}`);
-      setRefresh(true);
+      setRefresh(prev => prev + 1);
     } catch (e: any) {
       setError("Fehler beim Löschen der Organisation");
     } finally {

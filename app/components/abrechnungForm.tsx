@@ -95,10 +95,10 @@ const AbrechnungForm: React.FC<AbrechnungFormProps> = ({
 			? Number(cashSales) + calculatedTeamTips + Number(restaurantFloat)
 			: "";
 
-	// Calculate privatTips
+	// Calculate privatTips - default anfangsbestand to 0 if only endbestand is entered
 	const privatTips =
-		anfangsbestand !== "" && endbestand !== ""
-			? Number(endbestand) - Number(anfangsbestand)
+		endbestand !== ""
+			? Number(endbestand) - (anfangsbestand !== "" ? Number(anfangsbestand) : 0)
 			: "";
 
 	const handleSubmit = async (e: React.FormEvent) => {
@@ -136,15 +136,15 @@ const AbrechnungForm: React.FC<AbrechnungFormProps> = ({
 				{
 					method: isUpdating ? "PATCH" : "POST",
 					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						totalSales: Number(totalSales) || 0,
-						salesInCash: Number(cashSales) || 0,
-						finalAmountInCash: typeof zumAuszahlen === "number" ? zumAuszahlen : 0,
-						privatTips: typeof privatTips === "number" ? privatTips : 0,
-						teamTips: calculatedTeamTips || 0,
-						restaurantFloat: Number(restaurantFloat) || 0,
-						teamTipsPaid: calculatedTeamTips || 0,
-					}),
+				body: JSON.stringify({
+					totalSales: totalSales === "" ? 0 : Number(totalSales),
+					salesInCash: cashSales === "" ? 0 : Number(cashSales),
+					finalAmountInCash: typeof zumAuszahlen === "number" ? zumAuszahlen : 0,
+					privatTips: typeof privatTips === "number" ? privatTips : 0,
+					teamTips: calculatedTeamTips || 0,
+					restaurantFloat: restaurantFloat === "" ? 0 : Number(restaurantFloat),
+					teamTipsPaid: calculatedTeamTips || 0,
+				}),
 				}
 			);
 

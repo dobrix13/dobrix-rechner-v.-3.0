@@ -17,12 +17,16 @@ const AbrechnungenSection: React.FC<AbrechnungenSectionProps> = ({ user, filterB
   const [selectedRest, setSelectedRest] = useState<string>(filterByRestaurant || "");
   const [selectedUser, setSelectedUser] = useState<string>("");
   const [refresh, setRefresh] = useState<number>(0);
-  const organizations: Organization[] = useOrganizations() as Organization[];
-  const allRestaurants: Restaurant[] = useRestaurants("") as Restaurant[];
-  const restaurants: Restaurant[] = useRestaurants(selectedOrg) as Restaurant[];
-  const allUsers: User[] = useUsers("", "", refresh) as User[];
-  const users: User[] = useUsers(selectedOrg, selectedRest, refresh) as User[];
-  const abrechnungen: Abrechnung[] = (useAbrechnungen([selectedOrg, selectedRest, selectedUser, refresh]) as Abrechnung[]).sort((a, b) => {
+  const { organizations } = useOrganizations();
+  const { restaurants: allRestaurants } = useRestaurants("");
+  const { restaurants } = useRestaurants(selectedOrg);
+  const { users: allUsers } = useUsers("", "", refresh);
+  const { users } = useUsers(selectedOrg, selectedRest, refresh);
+  const { abrechnungen: rawAbrechnungen } = useAbrechnungen({
+    restaurantId: selectedRest,
+    refresh
+  });
+  const abrechnungen = rawAbrechnungen.sort((a, b) => {
     const dateA = a.date ? new Date(a.date).getTime() : 0;
     const dateB = b.date ? new Date(b.date).getTime() : 0;
     return dateA - dateB; // ascending order

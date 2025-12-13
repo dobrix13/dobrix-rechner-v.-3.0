@@ -51,7 +51,7 @@ export default function Home() {
     } else {
       setShowLogin(false);
     }
-  }, [user, isInitialized]);
+  }, [user, isInitialized, setShowLogin]);
 
   // Show loading state while initializing session
   if (!isInitialized) {

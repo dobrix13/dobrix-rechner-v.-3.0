@@ -12,10 +12,10 @@ interface RestaurantsSectionProps {
 }
 
 const RestaurantsSection: React.FC<RestaurantsSectionProps> = ({ user }) => {
-  const organizations = useOrganizations() as Organization[];
+  const { organizations } = useOrganizations();
   const [selectedOrg, setSelectedOrg] = useState<string>("");
-  const [refresh, setRefresh] = useState<boolean>(false);
-  const restaurants = useRestaurants(selectedOrg, refresh) as Restaurant[];
+  const [refresh, setRefresh] = useState<number>(0);
+  const { restaurants } = useRestaurants(selectedOrg, refresh);
   const [newRestName, setNewRestName] = useState<string>("");
   const [newRestFloat, setNewRestFloat] = useState<string>("");
   const [newRestTip, setNewRestTip] = useState<string>("");
@@ -40,7 +40,7 @@ const RestaurantsSection: React.FC<RestaurantsSectionProps> = ({ user }) => {
       setNewRestName("");
       setNewRestFloat("");
       setNewRestTip("");
-      setRefresh(r => !r);
+      setRefresh(r => r + 1);
     } catch {
       setError("Fehler beim Erstellen des Restaurants");
     } finally {
@@ -58,7 +58,7 @@ const RestaurantsSection: React.FC<RestaurantsSectionProps> = ({ user }) => {
         teamTipPercentage: Number(editRestTip)
       });
       setEditRestId(null);
-      setRefresh(r => !r);
+      setRefresh(r => r + 1);
     } catch {
       setError("Fehler beim Speichern des Restaurants");
     } finally {
@@ -75,7 +75,7 @@ const RestaurantsSection: React.FC<RestaurantsSectionProps> = ({ user }) => {
         method: "DELETE"
       });
       if (!res.ok) throw new Error("Delete failed");
-      setRefresh(r => !r);
+      setRefresh(r => r + 1);
     } catch {
       setError("Fehler beim Löschen des Restaurants");
     } finally {

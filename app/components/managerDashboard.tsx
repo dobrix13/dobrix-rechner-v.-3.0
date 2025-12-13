@@ -36,6 +36,7 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<any>({});
+  const [viewingId, setViewingId] = useState<string | null>(null);
   const [userNames, setUserNames] = useState<{ [key: string]: string }>({});
   const [selectedWaiter, setSelectedWaiter] = useState<string>("");
   const [restaurantWaiters, setRestaurantWaiters] = useState<any[]>([]);
@@ -155,6 +156,15 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleView = (abrechnung: any) => {
+    if (viewingId === abrechnung._id) {
+      // Toggle off if already viewing
+      setViewingId(null);
+      return;
+    }
+    setViewingId(abrechnung._id);
   };
 
   const handleEdit = (abrechnung: any) => {
@@ -364,15 +374,18 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
                           <th className="px-3 py-2 text-left text-sm">Umsatz</th>
                           <th className="px-3 py-2 text-left text-sm">Bar</th>
                           <th className="px-3 py-2 text-left text-sm">Team Tips</th>
+                          <th className="px-3 py-2 text-left text-sm">Ausgezahlt</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {dailyAbrechnungen.map((abr) => (
+                        {dailyAbrechnungen.map((abr) => {
+                          const ausgezahlt = (abr.salesInCash || 0) + (abr.teamTips || 0);
+                          return (
                           <tr 
                             key={abr._id} 
-                            onClick={() => handleEdit(abr)}
+                            onClick={() => handleView(abr)}
                             className={`border-b border-purple-300/20 cursor-pointer transition ${
-                              editingId === abr._id 
+                              viewingId === abr._id 
                                 ? 'bg-purple-500/20 ring-2 ring-purple-400/50' 
                                 : 'hover:bg-white/10'
                             }`}
@@ -381,61 +394,48 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
                               {userNames[abr.userId] || "N/A"}
                             </td>
                             <td className="px-3 py-2 text-sm">
-                              {editingId === abr._id ? (
-                                <input
-                                  type="number"
-                                  value={editData.totalSales || 0}
-                                  onChange={(e) => setEditData({ ...editData, totalSales: Number(e.target.value) })}
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="w-20 px-2 py-1 bg-white/10 border border-purple-300/30 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
-                                />
-                              ) : (
-                                `€${(abr.totalSales || 0).toFixed(2)}`
-                              )}
+                              `€${(abr.totalSales || 0).toFixed(2)}`
                             </td>
                             <td className="px-3 py-2 text-sm">
-                              {editingId === abr._id ? (
-                                <input
-                                  type="number"
-                                  value={editData.salesInCash || 0}
-                                  onChange={(e) => setEditData({ ...editData, salesInCash: Number(e.target.value) })}
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="w-20 px-2 py-1 bg-white/10 border border-purple-300/30 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
-                                />
-                              ) : (
-                                `€${(abr.salesInCash || 0).toFixed(2)}`
-                              )}
+                              `€${(abr.salesInCash || 0).toFixed(2)}`
                             </td>
                             <td className="px-3 py-2 text-sm">
-                              {editingId === abr._id ? (
-                                <input
-                                  type="number"
-                                  value={editData.teamTips || 0}
-                                  onChange={(e) => setEditData({ ...editData, teamTips: Number(e.target.value) })}
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="w-20 px-2 py-1 bg-white/10 border border-purple-300/30 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
-                                />
-                              ) : (
-                                `€${(abr.teamTips || 0).toFixed(2)}`
-                              )}
+                              `€${(abr.teamTips || 0).toFixed(2)}`
+                            </td>
+                            <td className="px-3 py-2 text-sm">
+                              `€${ausgezahlt.toFixed(2)}`
                             </td>
                           </tr>
-                        ))}
+                          );
+                        })}
                       </tbody>
                     </table>
-                    {editingId && (
-                      <div className="flex justify-end gap-2 mt-3">
+                    {viewingId && dailyAbrechnungen.find(a => a._id === viewingId) && (
+                      <div className="mt-4 p-4 bg-purple-500/10 border border-purple-300/30 rounded-lg">
+                        <h3 className="text-white font-bold mb-3">Abrechnung Details</h3>
+                        {(() => {
+                          const abr = dailyAbrechnungen.find(a => a._id === viewingId);
+                          const ausgezahlt = (abr.salesInCash || 0) + (abr.teamTips || 0);
+                          return (
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                              <div className="text-purple-200">Kellner:</div>
+                              <div className="text-white font-medium">{userNames[abr.userId] || "N/A"}</div>
+                              <div className="text-purple-200">Umsatz:</div>
+                              <div className="text-white font-medium">€{(abr.totalSales || 0).toFixed(2)}</div>
+                              <div className="text-purple-200">Bar:</div>
+                              <div className="text-white font-medium">€{(abr.salesInCash || 0).toFixed(2)}</div>
+                              <div className="text-purple-200">Team Tip:</div>
+                              <div className="text-white font-medium">€{(abr.teamTips || 0).toFixed(2)}</div>
+                              <div className="text-purple-200 font-bold">Ausgezahlt:</div>
+                              <div className="text-white font-bold">€{ausgezahlt.toFixed(2)}</div>
+                            </div>
+                          );
+                        })()}
                         <button
-                          onClick={handleSave}
-                          className="px-4 py-2 bg-green-500 hover:bg-green-600 rounded-lg text-sm font-medium shadow-lg transition"
+                          onClick={() => setViewingId(null)}
+                          className="mt-3 px-4 py-2 bg-purple-500 hover:bg-purple-600 rounded-lg text-sm font-medium shadow-lg transition"
                         >
-                          ✓ Speichern
-                        </button>
-                        <button
-                          onClick={handleCancel}
-                          className="px-4 py-2 bg-gray-500 hover:bg-gray-600 rounded-lg text-sm font-medium shadow-lg transition"
-                        >
-                          ✕ Abbrechen
+                          Schließen
                         </button>
                       </div>
                     )}
