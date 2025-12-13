@@ -1,10 +1,30 @@
 import { useEffect, useState } from "react";
-export function useUsers(orgId?: string, restId?: string, refresh?: any) {
-  const [users, setUsers] = useState([]);
+import type { User } from "../types/models";
+import { apiGet } from "../utils/api";
+
+export function useUsers(orgId?: string, restId?: string, refresh?: number) {
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
   useEffect(() => {
-    fetch("/api/users")
-      .then(res => res.json())
-      .then(data => setUsers(data));
+    const abortController = new AbortController();
+    setLoading(true);
+    
+    apiGet<User[]>("/api/users")
+      .then(data => {
+        setUsers(data);
+        setError(null);
+      })
+      .catch(err => {
+        if (err.name !== 'AbortError') {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => setLoading(false));
+
+    return () => abortController.abort();
   }, [orgId, restId, refresh]);
-  return users;
+
+  return { users, loading, error };
 }

@@ -135,7 +135,7 @@ export function generatePdfReport(data: ReportData) {
 	doc.setFontSize(8);
 	doc.setTextColor(128, 128, 128);
 	const timestamp = new Date().toLocaleString('de-DE');
-	doc.text(`Erstellt am ${timestamp} with Dobrix-Rechner`, pageWidth / 2, 287, { align: 'center' });
+	doc.text(`Erstellt am ${timestamp} mit Dobrix-Rechner`, pageWidth / 2, 287, { align: 'center' });
 
 	// Save the PDF
 	const filename = `Tagesreport_${data.restaurantName}_${data.geschaeftsDatum.replace(/\./g, '-')}.pdf`;

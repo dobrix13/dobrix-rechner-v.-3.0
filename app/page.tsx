@@ -27,6 +27,7 @@ export default function Home() {
     handleLogin,
     handleUserIconClick,
     handleLogout,
+    isInitialized,
   } = useAuth();
   const glowColor =
     user?.role === "admin"
@@ -45,9 +46,21 @@ export default function Home() {
   const { dayName, date, time } = getDateInfo();
 
   useEffect(() => {
-    if (!user) setShowLogin(true);
-    else setShowLogin(false);
-  }, [user]);
+    if (isInitialized && !user) {
+      setShowLogin(true);
+    } else {
+      setShowLogin(false);
+    }
+  }, [user, isInitialized]);
+
+  // Show loading state while initializing session
+  if (!isInitialized) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-white text-xl">Laden...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col font-sans">

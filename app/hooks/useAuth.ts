@@ -1,19 +1,49 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import type { UserSession } from "../types/models";
+import { STORAGE_KEYS } from "../types/models";
+
+const STORAGE_KEY = STORAGE_KEYS.USER_SESSION;
+
+// Load user from localStorage
+function loadUserFromStorage(): UserSession | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored) : null;
+  } catch (error) {
+    console.error('Error loading user from storage:', error);
+    return null;
+  }
+}
+
+// Save user to localStorage
+function saveUserToStorage(user: UserSession | null): void {
+  if (typeof window === 'undefined') return;
+  try {
+    if (user) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  } catch (error) {
+    console.error('Error saving user to storage:', error);
+  }
+}
 
 export function useAuth() {
-  const [user, setUser] = useState<{
-    name: string;
-    email?: string;
-    role: string;
-    organisation?: string;
-    restaurant?: string;
-    organizationId?: string;
-    restaurantId?: string;
-    userId?: string;
-    _id?: string;
-  } | null>(null);
+  const [user, setUser] = useState<UserSession | null>(null);
   const [showLogin, setShowLogin] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Restore user session on mount
+  useEffect(() => {
+    const storedUser = loadUserFromStorage();
+    if (storedUser) {
+      setUser(storedUser);
+    }
+    setIsInitialized(true);
+  }, []);
 
   // Show login popup if no user
   function updateLoginVisibility() {
@@ -66,7 +96,7 @@ export function useAuth() {
         }
       }
 
-      setUser({
+      const sessionUser: UserSession = {
         name: data.name,
         email: data.email,
         role: data.role,
@@ -76,7 +106,10 @@ export function useAuth() {
         restaurantId,
         userId: data._id,
         _id: data._id
-      });
+      };
+      
+      setUser(sessionUser);
+      saveUserToStorage(sessionUser);
       setShowLogin(false);
     } catch (err) {
       alert("Login failed. Please check your credentials.");
@@ -90,6 +123,7 @@ export function useAuth() {
 
   function handleLogout() {
     setUser(null);
+    saveUserToStorage(null);
     setShowUserMenu(false);
   }
 
@@ -98,6 +132,7 @@ export function useAuth() {
     setUser,
     showLogin,
     setShowLogin,
+    isInitialized,
     showUserMenu,
     setShowUserMenu,
     handleLogin,
