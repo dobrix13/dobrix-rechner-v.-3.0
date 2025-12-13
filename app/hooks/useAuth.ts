@@ -35,6 +35,7 @@ export function useAuth() {
   const [showLogin, setShowLogin] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
 
   // Restore user session on mount
   useEffect(() => {
@@ -58,6 +59,7 @@ export function useAuth() {
     const name = (form.elements.namedItem("name") as HTMLInputElement).value;
     const password = (form.elements.namedItem("password") as HTMLInputElement).value;
 
+    setLoginLoading(true);
     try {
       const res = await fetch("/api/users", {
         method: "POST",
@@ -114,6 +116,8 @@ export function useAuth() {
     } catch (err) {
       alert("Login failed. Please check your credentials.");
       console.error("Login error:", err);
+    } finally {
+      setLoginLoading(false);
     }
   }
 
@@ -139,5 +143,6 @@ export function useAuth() {
     handleUserIconClick,
     handleLogout,
     updateLoginVisibility,
+    loginLoading,
   };
 }

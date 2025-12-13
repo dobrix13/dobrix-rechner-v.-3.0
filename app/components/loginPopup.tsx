@@ -4,9 +4,10 @@ interface LoginPopupProps {
   show: boolean;
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
   error?: string;
+  loading?: boolean;
 }
 
-const LoginPopup: React.FC<LoginPopupProps> = ({ show, onSubmit, error }) => {
+const LoginPopup: React.FC<LoginPopupProps> = ({ show, onSubmit, error, loading }) => {
   if (!show) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md"
@@ -61,13 +62,20 @@ const LoginPopup: React.FC<LoginPopupProps> = ({ show, onSubmit, error }) => {
         )}
         <button
           type="submit"
-          className="relative mt-3 py-3 rounded-lg text-white font-bold hover:scale-105 transition-all duration-200 border border-white/20 backdrop-blur-sm"
+          disabled={loading}
+          className="relative mt-3 py-3 rounded-lg text-white font-bold hover:scale-105 transition-all duration-200 border border-white/20 backdrop-blur-sm disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
           style={{
             background: 'linear-gradient(135deg, rgba(0, 140, 140, 0.7) 0%, rgba(108, 43, 189, 0.7) 100%)',
             boxShadow: '0 4px 20px rgba(108, 43, 189, 0.4), 0 0 40px rgba(0, 140, 140, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
           }}
         >
-          Login
+          {loading && (
+            <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          )}
+          {loading ? 'Laden...' : 'Login'}
         </button>
       </form>
     </div>

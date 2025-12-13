@@ -28,6 +28,7 @@ export default function Home() {
     handleUserIconClick,
     handleLogout,
     isInitialized,
+    loginLoading,
   } = useAuth();
   const glowColor =
     user?.role === "admin"
@@ -87,6 +88,7 @@ export default function Home() {
       <LoginPopup
         show={showLogin}
         onSubmit={handleLogin}
+        loading={loginLoading}
       />
       {/* Main */}
       <main className="flex min-h-screen w-full max-w-5xl flex-col items-center justify-between pt-0 pb-32 px-0 sm:px-4 sm:items-start mx-auto">
