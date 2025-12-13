@@ -117,12 +117,12 @@ const AbrechnungForm: React.FC<AbrechnungFormProps> = ({
 			}
 			
 			// Validate required fields
-			if (totalSales === "" || totalSales === null || totalSales === undefined) {
+			if (totalSales === "") {
 				setError("Gesamtumsatz ist erforderlich");
 				setLoading(false);
 				return;
 			}
-			if (cashSales === "" || cashSales === null || cashSales === undefined) {
+			if (cashSales === "") {
 				setError("Barumsatz ist erforderlich");
 				setLoading(false);
 				return;
