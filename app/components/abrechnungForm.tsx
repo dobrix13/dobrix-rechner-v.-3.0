@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import NumericKeyboard from "./NumericKeyboard";
 
 interface ExistingAbrechnungData {
 	_id?: string;
@@ -42,6 +43,7 @@ const AbrechnungForm: React.FC<AbrechnungFormProps> = ({
 	const [showFloat, setShowFloat] = useState(false); // New state for showing restaurant float input
 	const [initialFloat, setInitialFloat] = useState<number>(0); // New state for initial float
 	const [station, setStation] = useState<string>(existingAbrechnung?.station || ""); // Station number/name
+	const [activeKeyboard, setActiveKeyboard] = useState<"totalSales" | "cashSales" | "anfangsbestand" | "endbestand" | "restaurantFloat" | null>(null);
 
 
 	useEffect(() => {
@@ -231,32 +233,22 @@ const AbrechnungForm: React.FC<AbrechnungFormProps> = ({
 						</label>
 						<input
 						type="text"
-						value={totalSales}
-						onChange={(e) => {
-							const val = e.target.value;
-							if (val === "" || val === "-" || !isNaN(Number(val))) {
-								setTotalSales(val === "" || val === "-" ? val : Number(val));
-							}
-						}}
+						value={totalSales === "" ? "" : String(totalSales)}
+						onFocus={() => setActiveKeyboard("totalSales")}
+						readOnly
 						required
-						className="px-3 py-2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-cyan-300 dark:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-						inputMode="decimal"
+						className="px-3 py-2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-cyan-300 dark:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 cursor-pointer"
 						/>
 					</div>
 					<div className="flex flex-col gap-2 w-full max-w-xs mt-4">
 						<label className="text-cyan-200 font-medium mb-1">Barumsatz:</label>
 						<input
 						type="text"
-						value={cashSales}
-						onChange={(e) => {
-							const val = e.target.value;
-							if (val === "" || val === "-" || !isNaN(Number(val))) {
-								setCashSales(val === "" || val === "-" ? val : Number(val));
-							}
-						}}
+						value={cashSales === "" ? "" : String(cashSales)}
+						onFocus={() => setActiveKeyboard("cashSales")}
+						readOnly
 						required
-						className="px-3 py-2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-cyan-300 dark:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-						inputMode="decimal"
+						className="px-3 py-2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-cyan-300 dark:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 cursor-pointer"
 						/>
 					</div>
 					{/* Team tips percent and calculated value */}
@@ -297,33 +289,23 @@ const AbrechnungForm: React.FC<AbrechnungFormProps> = ({
 								<label className="text-cyan-200 font-medium mb-1">
 									Anfangsbestand:
 								</label>
-								<input
-									type="text"
-									value={anfangsbestand}
-									onChange={(e) => {
-										const val = e.target.value;
-										if (val === "" || val === "-" || !isNaN(Number(val))) {
-											setAnfangsbestand(val === "" || val === "-" ? val : Number(val));
-										}
-									}}
-									className="px-3 py-2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-cyan-300 dark:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-									inputMode="decimal"
-								/>
+							<input
+								type="text"
+								value={anfangsbestand === "" ? "" : String(anfangsbestand)}
+								onFocus={() => setActiveKeyboard("anfangsbestand")}
+								readOnly
+								className="px-3 py-2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-cyan-300 dark:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 cursor-pointer"
+							/>
 								<label className="text-cyan-200 font-medium mb-1">
 									Endbestand:
 								</label>
-								<input
-									type="text"
-									value={endbestand}
-									onChange={(e) => {
-										const val = e.target.value;
-										if (val === "" || val === "-" || !isNaN(Number(val))) {
-											setEndbestand(val === "" || val === "-" ? val : Number(val));
-										}
-									}}
-									className="px-3 py-2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-cyan-300 dark:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-									inputMode="decimal"
-								/>
+							<input
+								type="text"
+								value={endbestand === "" ? "" : String(endbestand)}
+								onFocus={() => setActiveKeyboard("endbestand")}
+								readOnly
+								className="px-3 py-2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-cyan-300 dark:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 cursor-pointer"
+							/>
 								<div className="mt-2 text-cyan-300 font-medium">
 									Differenz:{" "}
 									{privatTips !== ""
@@ -363,15 +345,10 @@ const AbrechnungForm: React.FC<AbrechnungFormProps> = ({
 								</label>
 								<input
 									type="text"
-									value={restaurantFloat}
-									onChange={(e) => {
-										const val = e.target.value;
-										if (val === "" || val === "-" || !isNaN(Number(val))) {
-											setRestaurantFloat(val === "" ? initialFloat : (val === "-" ? val : Number(val)));
-										}
-									}}
-									className="px-3 py-2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-cyan-300 dark:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-									inputMode="decimal"
+									value={restaurantFloat === "" ? "" : String(restaurantFloat)}
+									onFocus={() => setActiveKeyboard("restaurantFloat")}
+									readOnly
+									className="px-3 py-2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-cyan-300 dark:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 cursor-pointer"
 								/>
 							</div>
 						)}
@@ -404,6 +381,50 @@ const AbrechnungForm: React.FC<AbrechnungFormProps> = ({
 					)}
 				</form>
 			</div>
+
+			{/* Custom Numeric Keyboards */}
+			{activeKeyboard === "totalSales" && (
+				<NumericKeyboard
+					value={totalSales}
+					onChange={setTotalSales}
+					onClose={() => setActiveKeyboard(null)}
+					label="Gesamtumsatz"
+				/>
+			)}
+			{activeKeyboard === "cashSales" && (
+				<NumericKeyboard
+					value={cashSales}
+					onChange={setCashSales}
+					onClose={() => setActiveKeyboard(null)}
+					label="Barumsatz"
+				/>
+			)}
+			{activeKeyboard === "anfangsbestand" && (
+				<NumericKeyboard
+					value={anfangsbestand}
+					onChange={setAnfangsbestand}
+					onClose={() => setActiveKeyboard(null)}
+					label="Anfangsbestand"
+				/>
+			)}
+			{activeKeyboard === "endbestand" && (
+				<NumericKeyboard
+					value={endbestand}
+					onChange={setEndbestand}
+					onClose={() => setActiveKeyboard(null)}
+					label="Endbestand"
+				/>
+			)}
+			{activeKeyboard === "restaurantFloat" && (
+				<NumericKeyboard
+					value={restaurantFloat}
+					onChange={(val) => {
+						setRestaurantFloat(val === "" ? initialFloat : val);
+					}}
+					onClose={() => setActiveKeyboard(null)}
+					label="Wechselgeld"
+				/>
+			)}
 		</div>
 	);
 };
