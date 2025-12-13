@@ -298,7 +298,7 @@ const UsersSection: React.FC<UsersSectionProps> = ({ user }) => {
                       <button className="px-2 py-1 rounded border-2 border-cyan-400/40 bg-cyan-900/30 backdrop-blur-sm text-cyan-100 font-normal hover:bg-cyan-800/40 hover:border-cyan-400/60 text-xs transition-all duration-200" onClick={() => {
                         setEditUserId(u._id);
                         setEditUserName(u.name);
-                        setEditUserEmail(u.email);
+                        setEditUserEmail(u.email || "");
                         setEditUserRole(u.role);
                         setEditUserOrg(typeof u.organization === 'string' ? u.organization : (u.organization?._id || ""));
                         setEditUserRest(typeof u.restaurant === 'string' ? u.restaurant : (u.restaurant?._id || ""));
