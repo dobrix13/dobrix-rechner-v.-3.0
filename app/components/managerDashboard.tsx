@@ -43,6 +43,7 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
   const [abrechnungRefresh, setAbrechnungRefresh] = useState<number>(0);
   const [restaurantInfo, setRestaurantInfo] = useState<any>(null);
   const [organizationInfo, setOrganizationInfo] = useState<any>(null);
+  const [pdfNotification, setPdfNotification] = useState<string | null>(null);
 
   // Validate manager has restaurantId
   if (!user.restaurantId) {
@@ -282,7 +283,11 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
       }
     };
 
-    generatePdfReport(reportData);
+    const filename = generatePdfReport(reportData);
+    setPdfNotification(filename);
+    
+    // Auto-hide notification after 10 seconds
+    setTimeout(() => setPdfNotification(null), 10000);
   };
 
   return (
@@ -394,16 +399,16 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
                               {userNames[abr.userId] || "N/A"}
                             </td>
                             <td className="px-3 py-2 text-sm">
-                              `€${(abr.totalSales || 0).toFixed(2)}`
+                              {(abr.totalSales || 0).toFixed(2)}
                             </td>
                             <td className="px-3 py-2 text-sm">
-                              `€${(abr.salesInCash || 0).toFixed(2)}`
+                              {(abr.salesInCash || 0).toFixed(2)}
                             </td>
                             <td className="px-3 py-2 text-sm">
-                              `€${(abr.teamTips || 0).toFixed(2)}`
+                              {(abr.teamTips || 0).toFixed(2)}
                             </td>
                             <td className="px-3 py-2 text-sm">
-                              `€${ausgezahlt.toFixed(2)}`
+                              {ausgezahlt.toFixed(2)}
                             </td>
                           </tr>
                           );
@@ -548,6 +553,37 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
           </div>
         </div>
       </div>
+      
+      {/* PDF Download Notification */}
+      {pdfNotification && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <div className="bg-purple-600 text-white px-6 py-4 rounded-lg shadow-2xl border-2 border-purple-400 flex items-start gap-3">
+            <svg className="w-6 h-6 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <div className="flex-1">
+              <h4 className="font-bold text-lg mb-1">PDF Erstellt!</h4>
+              <p className="text-sm text-purple-100 mb-2">
+                Der Tagesreport wurde erfolgreich generiert.
+              </p>
+              <p className="text-xs text-purple-200 font-mono break-all bg-purple-700/50 px-2 py-1 rounded">
+                {pdfNotification}
+              </p>
+              <p className="text-xs text-purple-100 mt-2">
+                Die Datei wurde in Ihren Downloads-Ordner gespeichert.
+              </p>
+            </div>
+            <button
+              onClick={() => setPdfNotification(null)}
+              className="text-purple-200 hover:text-white transition flex-shrink-0"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

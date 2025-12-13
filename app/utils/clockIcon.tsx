@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 
-const CLOCK_SIZE = 38.4; // px (20% bigger than 32px)
+const CLOCK_SIZE = 57.6; // px (50% bigger than 38.4px, which was 20% bigger than original 32px)
 const CENTER = CLOCK_SIZE / 2;
 const HAND_LENGTHS = {
 	hour: CLOCK_SIZE * 0.25,

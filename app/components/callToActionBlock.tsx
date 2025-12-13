@@ -101,7 +101,7 @@ const CallToActionBlock: React.FC<CallToActionBlockProps> = ({ user, dayName, da
           fontSize: "0.85rem",
         }}
       >
-        <div className="flex flex-col">
+        <div className="flex flex-col flex-1">
           <span className="text-cyan-200 whitespace-nowrap">
             {user.organisation ? user.organisation : "Organisation nicht gefunden"}
           </span>
@@ -109,9 +109,14 @@ const CallToActionBlock: React.FC<CallToActionBlockProps> = ({ user, dayName, da
             {user.restaurant ? user.restaurant : "Restaurant nicht gefunden"}
           </span>
         </div>
-        <span className="text-cyan-100 whitespace-nowrap ml-auto">
-		{date} <span className="inline-flex items-center"><ClockIcon className="w-4 h-4 mx-1 text-cyan-300" /></span>
-        </span>
+        <div className="flex flex-col items-center justify-center flex-1">
+          <span className="text-cyan-100 whitespace-nowrap text-center font-medium">
+            {date}
+          </span>
+        </div>
+        <div className="flex items-center justify-end flex-1">
+          <ClockIcon className="text-cyan-300" />
+        </div>
       </div>
       {/* Glass panel CTA block (bottom part, rounded bottom corners) */}
       <div

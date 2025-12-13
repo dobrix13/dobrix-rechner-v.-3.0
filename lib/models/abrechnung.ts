@@ -17,6 +17,7 @@ export interface IAbrechnung extends Document {
 	restaurantFloat: number;                     // Wechselgeld vom Restaurant
 	privatTips: number;                         // Eigenes Wechselgeld
 	finalAmountInCash: number;                   // endbestand der kellnergeldboitel in bar
+	station?: string;                            // Station number or name for tracking effectiveness
 }
 
 const AbrechnungSchema = new Schema<IAbrechnung>(
@@ -100,6 +101,11 @@ const AbrechnungSchema = new Schema<IAbrechnung>(
 			type: Number,
 			required: false,
 			min: -9999.0
+		},
+		station: {
+			type: String,
+			required: false,
+			trim: true
 		}
 	},
 	{ timestamps: true }

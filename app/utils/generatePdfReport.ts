@@ -140,4 +140,5 @@ export function generatePdfReport(data: ReportData) {
 	// Save the PDF
 	const filename = `Tagesreport_${data.restaurantName}_${data.geschaeftsDatum.replace(/\./g, '-')}.pdf`;
 	doc.save(filename);
+	return filename;
 }

@@ -7,6 +7,7 @@ interface ExistingAbrechnungData {
 	teamTipsPaid: number;
 	privatTips: number;
 	finalAmountInCash: number;
+	station?: string;
 }
 
 interface AbrechnungFormProps {
@@ -40,6 +41,7 @@ const AbrechnungForm: React.FC<AbrechnungFormProps> = ({
 	const [fetchedTeamTip, setFetchedTeamTip] = useState<number>(2); // default fallback
 	const [showFloat, setShowFloat] = useState(false); // New state for showing restaurant float input
 	const [initialFloat, setInitialFloat] = useState<number>(0); // New state for initial float
+	const [station, setStation] = useState<string>(existingAbrechnung?.station || ""); // Station number/name
 
 
 	useEffect(() => {
@@ -144,6 +146,7 @@ const AbrechnungForm: React.FC<AbrechnungFormProps> = ({
 					teamTips: calculatedTeamTips || 0,
 					restaurantFloat: restaurantFloat === "" ? 0 : Number(restaurantFloat),
 					teamTipsPaid: calculatedTeamTips || 0,
+					station: station.trim() || undefined,
 				}),
 				}
 			);
@@ -338,6 +341,16 @@ const AbrechnungForm: React.FC<AbrechnungFormProps> = ({
 										  })} €`
 										: "-"}
 								</div>
+								<label className="text-cyan-200 font-medium mb-1 mt-4">
+									Station (optional):
+								</label>
+								<input
+									type="text"
+									value={station}
+									onChange={(e) => setStation(e.target.value)}
+									placeholder="z.B. Station 1, Bar, Terrasse"
+									className="px-3 py-2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-cyan-300 dark:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+								/>
 							</div>
 						)}
 					</div>
