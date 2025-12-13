@@ -139,8 +139,8 @@ const AbrechnungForm: React.FC<AbrechnungFormProps> = ({
 					method: isUpdating ? "PATCH" : "POST",
 					headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
-					totalSales: totalSales === "" ? 0 : Number(totalSales),
-					salesInCash: cashSales === "" ? 0 : Number(cashSales),
+					totalSales: Number(totalSales),
+					salesInCash: Number(cashSales),
 					finalAmountInCash: typeof zumAuszahlen === "number" ? zumAuszahlen : 0,
 					privatTips: typeof privatTips === "number" ? privatTips : 0,
 					teamTips: calculatedTeamTips || 0,
