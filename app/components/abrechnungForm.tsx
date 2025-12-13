@@ -29,15 +29,15 @@ const AbrechnungForm: React.FC<AbrechnungFormProps> = ({
 	refresh,
 	existingAbrechnung,
 }) => {
-	const [totalSales, setTotalSales] = useState<number | "">(existingAbrechnung?.totalSales || "");
-	const [cashSales, setCashSales] = useState<number | "">(existingAbrechnung?.salesInCash || "");
-	const [anfangsbestand, setAnfangsbestand] = useState<number | "">("");
-	const [endbestand, setEndbestand] = useState<number | "">(existingAbrechnung?.privatTips ? "" : "");
+	const [totalSales, setTotalSales] = useState<number | "" | "-">(existingAbrechnung?.totalSales || "");
+	const [cashSales, setCashSales] = useState<number | "" | "-">(existingAbrechnung?.salesInCash || "");
+	const [anfangsbestand, setAnfangsbestand] = useState<number | "" | "-">("");
+	const [endbestand, setEndbestand] = useState<number | "" | "-">(existingAbrechnung?.privatTips ? "" : "");
 	const [showPrivate, setShowPrivate] = useState(!!existingAbrechnung?.privatTips);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [success, setSuccess] = useState<boolean>(false);
-	const [restaurantFloat, setRestaurantFloat] = useState<number | "">(0); // Default to 0
+	const [restaurantFloat, setRestaurantFloat] = useState<number | "" | "-">(0); // Default to 0
 	const [fetchedTeamTip, setFetchedTeamTip] = useState<number>(2); // default fallback
 	const [showFloat, setShowFloat] = useState(false); // New state for showing restaurant float input
 	const [initialFloat, setInitialFloat] = useState<number>(0); // New state for initial float
@@ -117,12 +117,12 @@ const AbrechnungForm: React.FC<AbrechnungFormProps> = ({
 			}
 			
 			// Validate required fields
-			if (totalSales === "") {
+			if (totalSales === "" || totalSales === "-") {
 				setError("Gesamtumsatz ist erforderlich");
 				setLoading(false);
 				return;
 			}
-			if (cashSales === "") {
+			if (cashSales === "" || cashSales === "-") {
 				setError("Barumsatz ist erforderlich");
 				setLoading(false);
 				return;
@@ -230,39 +230,33 @@ const AbrechnungForm: React.FC<AbrechnungFormProps> = ({
 							Gesamtumsatz:
 						</label>
 						<input
-							type="number"
-							step="any"
-							value={totalSales}
-							onChange={(e) =>
-								setTotalSales(
-									e.target.value === "" ? "" : Number(e.target.value)
-								)
+						type="text"
+						value={totalSales}
+						onChange={(e) => {
+							const val = e.target.value;
+							if (val === "" || val === "-" || !isNaN(Number(val))) {
+								setTotalSales(val === "" || val === "-" ? val : Number(val));
 							}
-							required
-							className="px-3 py-2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-cyan-300 dark:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-							style={{ MozAppearance: "textfield" }}
-							inputMode="decimal"
-							pattern="[0-9]*"
-							onWheel={(e) => e.currentTarget.blur()} // disables value change on scroll
+						}}
+						required
+						className="px-3 py-2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-cyan-300 dark:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+						inputMode="decimal"
 						/>
 					</div>
 					<div className="flex flex-col gap-2 w-full max-w-xs mt-4">
 						<label className="text-cyan-200 font-medium mb-1">Barumsatz:</label>
 						<input
-							type="number"
-							step="any"
-							value={cashSales}
-							onChange={(e) =>
-								setCashSales(
-									e.target.value === "" ? "" : Number(e.target.value)
-								)
+						type="text"
+						value={cashSales}
+						onChange={(e) => {
+							const val = e.target.value;
+							if (val === "" || val === "-" || !isNaN(Number(val))) {
+								setCashSales(val === "" || val === "-" ? val : Number(val));
 							}
-							required
-							className="px-3 py-2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-cyan-300 dark:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-							style={{ MozAppearance: "textfield" }}
-							inputMode="decimal"
-							pattern="[0-9]*"
-							onWheel={(e) => e.currentTarget.blur()} // disables value change on scroll
+						}}
+						required
+						className="px-3 py-2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-cyan-300 dark:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+						inputMode="decimal"
 						/>
 					</div>
 					{/* Team tips percent and calculated value */}
@@ -304,33 +298,31 @@ const AbrechnungForm: React.FC<AbrechnungFormProps> = ({
 									Anfangsbestand:
 								</label>
 								<input
-									type="number"
-									step="any"
+									type="text"
 									value={anfangsbestand}
-									onChange={(e) =>
-										setAnfangsbestand(
-											e.target.value === ""
-												? ""
-												: Number(e.target.value)
-										)
-									}
+									onChange={(e) => {
+										const val = e.target.value;
+										if (val === "" || val === "-" || !isNaN(Number(val))) {
+											setAnfangsbestand(val === "" || val === "-" ? val : Number(val));
+										}
+									}}
 									className="px-3 py-2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-cyan-300 dark:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+									inputMode="decimal"
 								/>
 								<label className="text-cyan-200 font-medium mb-1">
 									Endbestand:
 								</label>
 								<input
-									type="number"
-									step="any"
+									type="text"
 									value={endbestand}
-									onChange={(e) =>
-										setEndbestand(
-											e.target.value === ""
-												? ""
-												: Number(e.target.value)
-										)
-									}
+									onChange={(e) => {
+										const val = e.target.value;
+										if (val === "" || val === "-" || !isNaN(Number(val))) {
+											setEndbestand(val === "" || val === "-" ? val : Number(val));
+										}
+									}}
 									className="px-3 py-2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-cyan-300 dark:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+									inputMode="decimal"
 								/>
 								<div className="mt-2 text-cyan-300 font-medium">
 									Differenz:{" "}
@@ -370,20 +362,16 @@ const AbrechnungForm: React.FC<AbrechnungFormProps> = ({
 									Wechselgeld:
 								</label>
 								<input
-									type="number"
-									step="any"
+									type="text"
 									value={restaurantFloat}
-									onChange={(e) =>
-										setRestaurantFloat(
-											e.target.value === ""
-												? initialFloat
-												: Number(e.target.value)
-										)
-									}
+									onChange={(e) => {
+										const val = e.target.value;
+										if (val === "" || val === "-" || !isNaN(Number(val))) {
+											setRestaurantFloat(val === "" ? initialFloat : (val === "-" ? val : Number(val)));
+										}
+									}}
 									className="px-3 py-2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-cyan-300 dark:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-									style={{ MozAppearance: "textfield" }}
 									inputMode="decimal"
-									pattern="[0-9]*"
 								/>
 							</div>
 						)}
