@@ -77,18 +77,42 @@ const NumericKeyboard: React.FC<NumericKeyboardProps> = ({ value, onChange, onCl
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm">
-      <div className="w-full max-w-md bg-gradient-to-b from-zinc-900 to-black border-t-2 border-cyan-500/30 rounded-t-2xl shadow-2xl">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md"
+      style={{
+        background: 'radial-gradient(circle at 50% 50%, rgba(108, 43, 189, 0.15) 0%, rgba(0, 140, 140, 0.1) 50%, rgba(179, 106, 0, 0.15) 100%)'
+      }}
+    >
+      <div 
+        className="relative rounded-2xl shadow-2xl p-6 w-full max-w-sm backdrop-blur-xl border border-white/10"
+        style={{
+          background: 'linear-gradient(135deg, rgba(28, 28, 28, 0.7) 0%, rgba(40, 40, 60, 0.6) 100%)',
+          boxShadow: '0 8px 32px 0 rgba(108, 43, 189, 0.3), 0 0 60px rgba(0, 140, 140, 0.2), inset 0 0 80px rgba(179, 106, 0, 0.05)'
+        }}
+      >
+        <div 
+          className="absolute inset-0 rounded-2xl opacity-30 pointer-events-none"
+          style={{
+            background: 'radial-gradient(circle at 20% 20%, rgba(108, 43, 189, 0.4) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(0, 140, 140, 0.4) 0%, transparent 50%)'
+          }}
+        />
+        
         {/* Display */}
-        <div className="p-4 border-b border-cyan-500/20">
-          <div className="text-sm text-cyan-300 mb-2">{label}</div>
-          <div className="text-3xl text-white font-mono text-right bg-zinc-800/50 px-4 py-3 rounded-lg border border-cyan-500/20 min-h-[60px] flex items-center justify-end">
+        <div className="relative mb-4">
+          <div className="text-sm text-cyan-300 mb-2 font-medium">{label}</div>
+          <div 
+            className="text-2xl text-white font-mono text-right px-4 py-2 rounded-lg border border-white/10 backdrop-blur-sm min-h-[50px] flex items-center justify-end"
+            style={{
+              background: 'rgba(20, 20, 40, 0.6)',
+              boxShadow: 'inset 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 20px rgba(108, 43, 189, 0.1)'
+            }}
+          >
             {displayValue || "0"}
           </div>
         </div>
 
         {/* Keyboard */}
-        <div className="p-4">
+        <div className="relative">
           <div className="grid grid-cols-3 gap-2 mb-2">
             {keys.map((row, rowIndex) => (
               <React.Fragment key={rowIndex}>
@@ -96,7 +120,12 @@ const NumericKeyboard: React.FC<NumericKeyboardProps> = ({ value, onChange, onCl
                   <button
                     key={key}
                     onClick={() => handleKeyPress(key)}
-                    className="aspect-square text-2xl font-semibold rounded-xl transition-all active:scale-95 bg-zinc-800 text-white hover:bg-zinc-700 border border-cyan-500/20"
+                    className="h-12 text-lg font-semibold rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 backdrop-blur-sm border border-white/20"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(0, 140, 140, 0.5) 0%, rgba(108, 43, 189, 0.5) 100%)',
+                      boxShadow: '0 2px 10px rgba(108, 43, 189, 0.3), 0 0 20px rgba(0, 140, 140, 0.2)',
+                      color: 'white'
+                    }}
                   >
                     {key === "backspace" ? "⌫" : key}
                   </button>
@@ -109,21 +138,36 @@ const NumericKeyboard: React.FC<NumericKeyboardProps> = ({ value, onChange, onCl
           <div className="grid grid-cols-3 gap-2">
             <button
               onClick={() => handleKeyPress("-")}
-              className="py-4 text-2xl font-semibold rounded-xl transition-all active:scale-95 bg-amber-600 text-white hover:bg-amber-500 border border-amber-500/30"
+              className="h-12 text-lg font-semibold rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 backdrop-blur-sm border border-white/20"
+              style={{
+                background: 'linear-gradient(135deg, rgba(179, 106, 0, 0.6) 0%, rgba(255, 153, 0, 0.5) 100%)',
+                boxShadow: '0 2px 10px rgba(179, 106, 0, 0.3), 0 0 20px rgba(255, 153, 0, 0.2)',
+                color: 'white'
+              }}
             >
               +/−
             </button>
             <button
               onClick={() => handleKeyPress("clear")}
-              className="py-4 text-xl font-semibold rounded-xl transition-all active:scale-95 bg-red-600 text-white hover:bg-red-500 border border-red-500/30"
+              className="h-12 text-base font-semibold rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 backdrop-blur-sm border border-white/20"
+              style={{
+                background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.6) 0%, rgba(185, 28, 28, 0.5) 100%)',
+                boxShadow: '0 2px 10px rgba(220, 38, 38, 0.3), 0 0 20px rgba(185, 28, 28, 0.2)',
+                color: 'white'
+              }}
             >
-              Clear
+              C
             </button>
             <button
               onClick={handleDone}
-              className="py-4 text-xl font-semibold rounded-xl transition-all active:scale-95 bg-green-600 text-white hover:bg-green-500 border border-green-500/30"
+              className="h-12 text-base font-semibold rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 backdrop-blur-sm border border-white/20"
+              style={{
+                background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.6) 0%, rgba(22, 163, 74, 0.5) 100%)',
+                boxShadow: '0 2px 10px rgba(34, 197, 94, 0.3), 0 0 20px rgba(22, 163, 74, 0.2)',
+                color: 'white'
+              }}
             >
-              Done
+              Ok
             </button>
           </div>
         </div>
