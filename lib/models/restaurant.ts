@@ -13,6 +13,8 @@ export interface IRestaurant extends Document {
 	voucherProofEnabled?: boolean; // Ob die Gutschein-Belegpflicht aktiviert ist
 	discountProofEnabled?: boolean; // Ob die Rabatt-Belegpflicht aktiviert ist
 	stornoProofEnabled?: boolean; // Ob die Storno-Belegpflicht aktiviert ist
+	tresorEnabled?: boolean; // Ob Tresorbestand-Eingabe aktiviert ist
+	safebagEnabled?: boolean; // Ob Safebag-Nummer-Eingabe aktiviert ist
 }
 
 const RestaurantSchema: Schema<IRestaurant> = new Schema<IRestaurant>(
@@ -55,12 +57,25 @@ const RestaurantSchema: Schema<IRestaurant> = new Schema<IRestaurant>(
 		stornoProofEnabled: {
 			type: Boolean,
 			default: false
+		},
+		tresorEnabled: {
+			type: Boolean,
+			default: false
+		},
+		safebagEnabled: {
+			type: Boolean,
+			default: false
 		}
     },
-    { timestamps: true }
+    { timestamps: true, strict: true }
 );
 
 RestaurantSchema.index({ name: 1, organization: 1 }, { unique: true });
 
-const Restaurant = mongoose.models.Restaurant || mongoose.model<IRestaurant>('Restaurant', RestaurantSchema);
+// Delete the model if it exists to force recompilation with new schema
+if (mongoose.models.Restaurant) {
+    delete mongoose.models.Restaurant;
+}
+
+const Restaurant = mongoose.model<IRestaurant>('Restaurant', RestaurantSchema);
 export default Restaurant;

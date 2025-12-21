@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { RestaurantIcon, AbrechnungIcon, UserIcon } from "./adminIcons";
 import AbrechnungenSection from "./AbrechnungenSection";
 import AbrechnungForm from "./abrechnungForm";
 import { generatePdfReport } from "../utils/generatePdfReport";
+import { Html5Qrcode } from "html5-qrcode";
 
 const TABS = [
   { key: "tagesreport", icon: <RestaurantIcon className="w-7 h-7" />, label: "Tagesreport" },
@@ -44,6 +45,76 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
   const [restaurantInfo, setRestaurantInfo] = useState<any>(null);
   const [organizationInfo, setOrganizationInfo] = useState<any>(null);
   const [pdfNotification, setPdfNotification] = useState<string | null>(null);
+  const [tresorbestand, setTresorbestand] = useState<string>("");
+  const [safebagNr, setSafebagNr] = useState<string>("");
+  const [isScanningBarcode, setIsScanningBarcode] = useState(false);
+  const scannerRef = useRef<Html5Qrcode | null>(null);
+  
+  // Safebag money breakdown
+  const [bills500, setBills500] = useState<string>("");
+  const [bills200, setBills200] = useState<string>("");
+  const [bills100, setBills100] = useState<string>("");
+  const [bills50, setBills50] = useState<string>("");
+  const [bills20, setBills20] = useState<string>("");
+  const [bills10, setBills10] = useState<string>("");
+  const [bills5, setBills5] = useState<string>("");
+  const [munzen, setMunzen] = useState<string>("");
+  
+  // Amount inputs for safebag (alternative input method)
+  const [amount500, setAmount500] = useState<string>("");
+  const [amount200, setAmount200] = useState<string>("");
+  const [amount100, setAmount100] = useState<string>("");
+  const [amount50, setAmount50] = useState<string>("");
+  const [amount20, setAmount20] = useState<string>("");
+  const [amount10, setAmount10] = useState<string>("");
+  const [amount5, setAmount5] = useState<string>("");
+
+  // Calculate safebag total
+  const safebagTotal = 
+    (parseFloat(bills500) || 0) * 500 +
+    (parseFloat(bills200) || 0) * 200 +
+    (parseFloat(bills100) || 0) * 100 +
+    (parseFloat(bills50) || 0) * 50 +
+    (parseFloat(bills20) || 0) * 20 +
+    (parseFloat(bills10) || 0) * 10 +
+    (parseFloat(bills5) || 0) * 5 +
+    (parseFloat(munzen) || 0);
+
+  const totalCashSales = dailyStats?.totalCash || 0;
+  const safebagMatches = Math.abs(safebagTotal - totalCashSales) < 0.01;
+
+  // Auto-calculate münzen if all bills are entered
+  const billsTotal = 
+    (parseFloat(bills500) || 0) * 500 +
+    (parseFloat(bills200) || 0) * 200 +
+    (parseFloat(bills100) || 0) * 100 +
+    (parseFloat(bills50) || 0) * 50 +
+    (parseFloat(bills20) || 0) * 20 +
+    (parseFloat(bills10) || 0) * 10 +
+    (parseFloat(bills5) || 0) * 5;
+  
+  const calculatedMunzen = totalCashSales - billsTotal;
+
+  // Validate münzen max 4.99
+  const munzenValue = parseFloat(munzen) || 0;
+  const munzenInvalid = munzenValue > 4.99;
+
+  // Validate if any field exceeds the remaining amount
+  const remaining500 = totalCashSales - (parseFloat(bills200) || 0) * 200 - (parseFloat(bills100) || 0) * 100 - (parseFloat(bills50) || 0) * 50 - (parseFloat(bills20) || 0) * 20 - (parseFloat(bills10) || 0) * 10 - (parseFloat(bills5) || 0) * 5 - munzenValue;
+  const remaining200 = totalCashSales - (parseFloat(bills500) || 0) * 500 - (parseFloat(bills100) || 0) * 100 - (parseFloat(bills50) || 0) * 50 - (parseFloat(bills20) || 0) * 20 - (parseFloat(bills10) || 0) * 10 - (parseFloat(bills5) || 0) * 5 - munzenValue;
+  const remaining100 = totalCashSales - (parseFloat(bills500) || 0) * 500 - (parseFloat(bills200) || 0) * 200 - (parseFloat(bills50) || 0) * 50 - (parseFloat(bills20) || 0) * 20 - (parseFloat(bills10) || 0) * 10 - (parseFloat(bills5) || 0) * 5 - munzenValue;
+  const remaining50 = totalCashSales - (parseFloat(bills500) || 0) * 500 - (parseFloat(bills200) || 0) * 200 - (parseFloat(bills100) || 0) * 100 - (parseFloat(bills20) || 0) * 20 - (parseFloat(bills10) || 0) * 10 - (parseFloat(bills5) || 0) * 5 - munzenValue;
+  const remaining20 = totalCashSales - (parseFloat(bills500) || 0) * 500 - (parseFloat(bills200) || 0) * 200 - (parseFloat(bills100) || 0) * 100 - (parseFloat(bills50) || 0) * 50 - (parseFloat(bills10) || 0) * 10 - (parseFloat(bills5) || 0) * 5 - munzenValue;
+  const remaining10 = totalCashSales - (parseFloat(bills500) || 0) * 500 - (parseFloat(bills200) || 0) * 200 - (parseFloat(bills100) || 0) * 100 - (parseFloat(bills50) || 0) * 50 - (parseFloat(bills20) || 0) * 20 - (parseFloat(bills5) || 0) * 5 - munzenValue;
+  const remaining5 = totalCashSales - (parseFloat(bills500) || 0) * 500 - (parseFloat(bills200) || 0) * 200 - (parseFloat(bills100) || 0) * 100 - (parseFloat(bills50) || 0) * 50 - (parseFloat(bills20) || 0) * 20 - (parseFloat(bills10) || 0) * 10 - munzenValue;
+
+  const bills500Invalid = (parseFloat(bills500) || 0) * 500 > remaining500 && remaining500 >= 0;
+  const bills200Invalid = (parseFloat(bills200) || 0) * 200 > remaining200 && remaining200 >= 0;
+  const bills100Invalid = (parseFloat(bills100) || 0) * 100 > remaining100 && remaining100 >= 0;
+  const bills50Invalid = (parseFloat(bills50) || 0) * 50 > remaining50 && remaining50 >= 0;
+  const bills20Invalid = (parseFloat(bills20) || 0) * 20 > remaining20 && remaining20 >= 0;
+  const bills10Invalid = (parseFloat(bills10) || 0) * 10 > remaining10 && remaining10 >= 0;
+  const bills5Invalid = (parseFloat(bills5) || 0) * 5 > remaining5 && remaining5 >= 0;
 
   // Validate manager has restaurantId
   if (!user.restaurantId) {
@@ -280,7 +351,20 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
         umsatz: dailyStats.totalSales,
         bargeld: dailyStats.totalCash,
         teamTip: dailyStats.totalTeamTips
-      }
+      },
+      tresorbestand: restaurantInfo?.tresorEnabled && tresorbestand ? tresorbestand : undefined,
+      safebagNr: restaurantInfo?.safebagEnabled && safebagNr ? safebagNr : undefined,
+      safebagBreakdown: restaurantInfo?.safebagEnabled && safebagNr ? {
+        bills500: parseFloat(bills500) || 0,
+        bills200: parseFloat(bills200) || 0,
+        bills100: parseFloat(bills100) || 0,
+        bills50: parseFloat(bills50) || 0,
+        bills20: parseFloat(bills20) || 0,
+        bills10: parseFloat(bills10) || 0,
+        bills5: parseFloat(bills5) || 0,
+        munzen: parseFloat(munzen) || 0,
+        total: safebagTotal
+      } : undefined
     };
 
     const filename = generatePdfReport(reportData);
@@ -482,6 +566,424 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
                 ) : (
                   <div className="text-white text-center py-8">
                     Keine Daten für diesen Geschäftstag verfügbar.
+                  </div>
+                )}
+
+                {/* Tresor and Safebag inputs (conditional) */}
+                {dailyStats && dailyStats.count > 0 && (restaurantInfo?.tresorEnabled || restaurantInfo?.safebagEnabled) && (
+                  <div className="mt-6 space-y-4 bg-white/5 backdrop-blur-sm border border-cyan-300/30 rounded-lg p-4">
+                    {restaurantInfo?.tresorEnabled && (
+                      <div className="flex flex-col">
+                        <label className="text-cyan-200 font-medium mb-2">
+                          € Tresorbestand:
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={tresorbestand}
+                          onChange={(e) => setTresorbestand(e.target.value)}
+                          placeholder="0.00"
+                          className="px-3 py-2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-cyan-300 dark:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                        />
+                      </div>
+                    )}
+                    
+                    {restaurantInfo?.safebagEnabled && (
+                      <div className="flex flex-col">
+                        <label className="text-cyan-200 font-medium mb-2">
+                          Safebag Nr.:
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={safebagNr}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/\D/g, '').slice(0, 20);
+                              setSafebagNr(value);
+                            }}
+                            placeholder="00342802481225565656"
+                            maxLength={20}
+                            className="px-3 py-2 pr-12 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-cyan-300 dark:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 font-mono w-full"
+                          />
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (isScanningBarcode) {
+                                // Stop scanning
+                                if (scannerRef.current) {
+                                  try {
+                                    await scannerRef.current.stop();
+                                    scannerRef.current.clear();
+                                    scannerRef.current = null;
+                                  } catch (err) {
+                                    console.error('Error stopping scanner:', err);
+                                  }
+                                }
+                                setIsScanningBarcode(false);
+                              } else {
+                                // Start scanning
+                                setIsScanningBarcode(true);
+                                try {
+                                  const scanner = new Html5Qrcode("barcode-reader");
+                                  scannerRef.current = scanner;
+                                  
+                                  await scanner.start(
+                                    { facingMode: "environment" },
+                                    {
+                                      fps: 10,
+                                      qrbox: { width: 250, height: 150 }
+                                    },
+                                    (decodedText) => {
+                                      // Extract only digits from barcode
+                                      const digits = decodedText.replace(/\D/g, '').slice(0, 20);
+                                      setSafebagNr(digits);
+                                      
+                                      // Stop scanning after successful scan
+                                      scanner.stop().then(() => {
+                                        scanner.clear();
+                                        scannerRef.current = null;
+                                        setIsScanningBarcode(false);
+                                      }).catch(err => {
+                                        console.error('Error stopping scanner:', err);
+                                        setIsScanningBarcode(false);
+                                      });
+                                    },
+                                    (errorMessage) => {
+                                      // Scanning error - ignore, just keep scanning
+                                    }
+                                  );
+                                } catch (err) {
+                                  console.error('Error starting barcode scanner:', err);
+                                  alert('Kamera konnte nicht gestartet werden. Bitte Berechtigungen prüfen.');
+                                  setIsScanningBarcode(false);
+                                }
+                              }
+                            }}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-cyan-500 hover:text-cyan-400 transition-colors"
+                            title="Barcode scannen"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
+                            </svg>
+                          </button>
+                        </div>
+                        
+                        {/* Barcode Scanner Display */}
+                        {isScanningBarcode && (
+                          <div className="mt-3 p-3 bg-zinc-900 rounded-lg border border-cyan-500">
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="text-cyan-300 text-sm font-medium">Barcode scannen...</span>
+                              <button
+                                onClick={async () => {
+                                  if (scannerRef.current) {
+                                    try {
+                                      await scannerRef.current.stop();
+                                      scannerRef.current.clear();
+                                      scannerRef.current = null;
+                                    } catch (err) {
+                                      console.error('Error stopping scanner:', err);
+                                    }
+                                  }
+                                  setIsScanningBarcode(false);
+                                }}
+                                className="text-red-400 hover:text-red-300 text-sm font-medium"
+                              >
+                                Abbrechen
+                              </button>
+                            </div>
+                            <div id="barcode-reader" className="w-full rounded overflow-hidden"></div>
+                          </div>
+                        )}
+                        
+                        <div className="text-xs text-cyan-400 mt-1">
+                          {safebagNr.length}/20 Ziffern
+                        </div>
+                        
+                        {/* Safebag Money Breakdown */}
+                        <div className="mt-4 space-y-3 p-4 bg-white/5 rounded border border-cyan-400/20">
+                          <div className="text-cyan-200 font-medium mb-3">Safebag Inhalt:</div>
+                          
+                          {/* Bill inputs - one per line */}
+                          <div className="space-y-2">
+                            {/* €500 */}
+                            <div className="flex items-center gap-2">
+                              <label className="text-cyan-200 text-sm w-16">€ 500</label>
+                              <span className="text-cyan-300 text-sm">x</span>
+                              <input
+                                type="number"
+                                min="0"
+                                value={bills500}
+                                onChange={(e) => {
+                                  setBills500(e.target.value);
+                                  setAmount500(((parseFloat(e.target.value) || 0) * 500).toFixed(2));
+                                }}
+                                className={'px-2 py-1 w-16 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border focus:outline-none focus:ring-2 focus:ring-cyan-500 text-center ' + (bills500Invalid ? 'border-red-500 bg-red-900/20' : 'border-cyan-300 dark:border-cyan-700')}
+                                placeholder="0"
+                              />
+                              <span className="text-cyan-300 text-sm">=</span>
+                              <span className="text-cyan-300 text-sm">€</span>
+                              <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={amount500}
+                                onChange={(e) => {
+                                  setAmount500(e.target.value);
+                                  const count = Math.floor((parseFloat(e.target.value) || 0) / 500);
+                                  setBills500(count.toString());
+                                }}
+                                className={'px-2 py-1 w-24 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border focus:outline-none focus:ring-2 focus:ring-cyan-500 text-right ' + (bills500Invalid ? 'border-red-500 bg-red-900/20' : 'border-cyan-300 dark:border-cyan-700')}
+                                placeholder="0.00"
+                              />
+                            </div>
+                            
+                            {/* €200 */}
+                            <div className="flex items-center gap-2">
+                              <label className="text-cyan-200 text-sm w-16">€ 200</label>
+                              <span className="text-cyan-300 text-sm">x</span>
+                              <input
+                                type="number"
+                                min="0"
+                                value={bills200}
+                                onChange={(e) => {
+                                  setBills200(e.target.value);
+                                  setAmount200(((parseFloat(e.target.value) || 0) * 200).toFixed(2));
+                                }}
+                                className={'px-2 py-1 w-16 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border focus:outline-none focus:ring-2 focus:ring-cyan-500 text-center ' + (bills200Invalid ? 'border-red-500 bg-red-900/20' : 'border-cyan-300 dark:border-cyan-700')}
+                                placeholder="0"
+                              />
+                              <span className="text-cyan-300 text-sm">=</span>
+                              <span className="text-cyan-300 text-sm">€</span>
+                              <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={amount200}
+                                onChange={(e) => {
+                                  setAmount200(e.target.value);
+                                  const count = Math.floor((parseFloat(e.target.value) || 0) / 200);
+                                  setBills200(count.toString());
+                                }}
+                                className={'px-2 py-1 w-24 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border focus:outline-none focus:ring-2 focus:ring-cyan-500 text-right ' + (bills200Invalid ? 'border-red-500 bg-red-900/20' : 'border-cyan-300 dark:border-cyan-700')}
+                                placeholder="0.00"
+                              />
+                            </div>
+                            
+                            {/* €100 */}
+                            <div className="flex items-center gap-2">
+                              <label className="text-cyan-200 text-sm w-16">€ 100</label>
+                              <span className="text-cyan-300 text-sm">x</span>
+                              <input
+                                type="number"
+                                min="0"
+                                value={bills100}
+                                onChange={(e) => {
+                                  setBills100(e.target.value);
+                                  setAmount100(((parseFloat(e.target.value) || 0) * 100).toFixed(2));
+                                }}
+                                className={'px-2 py-1 w-16 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border focus:outline-none focus:ring-2 focus:ring-cyan-500 text-center ' + (bills100Invalid ? 'border-red-500 bg-red-900/20' : 'border-cyan-300 dark:border-cyan-700')}
+                                placeholder="0"
+                              />
+                              <span className="text-cyan-300 text-sm">=</span>
+                              <span className="text-cyan-300 text-sm">€</span>
+                              <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={amount100}
+                                onChange={(e) => {
+                                  setAmount100(e.target.value);
+                                  const count = Math.floor((parseFloat(e.target.value) || 0) / 100);
+                                  setBills100(count.toString());
+                                }}
+                                className={'px-2 py-1 w-24 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border focus:outline-none focus:ring-2 focus:ring-cyan-500 text-right ' + (bills100Invalid ? 'border-red-500 bg-red-900/20' : 'border-cyan-300 dark:border-cyan-700')}
+                                placeholder="0.00"
+                              />
+                            </div>
+                            
+                            {/* €50 */}
+                            <div className="flex items-center gap-2">
+                              <label className="text-cyan-200 text-sm w-16">€ 50</label>
+                              <span className="text-cyan-300 text-sm">x</span>
+                              <input
+                                type="number"
+                                min="0"
+                                value={bills50}
+                                onChange={(e) => {
+                                  setBills50(e.target.value);
+                                  setAmount50(((parseFloat(e.target.value) || 0) * 50).toFixed(2));
+                                }}
+                                className={'px-2 py-1 w-16 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border focus:outline-none focus:ring-2 focus:ring-cyan-500 text-center ' + (bills50Invalid ? 'border-red-500 bg-red-900/20' : 'border-cyan-300 dark:border-cyan-700')}
+                                placeholder="0"
+                              />
+                              <span className="text-cyan-300 text-sm">=</span>
+                              <span className="text-cyan-300 text-sm">€</span>
+                              <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={amount50}
+                                onChange={(e) => {
+                                  setAmount50(e.target.value);
+                                  const count = Math.floor((parseFloat(e.target.value) || 0) / 50);
+                                  setBills50(count.toString());
+                                }}
+                                className={'px-2 py-1 w-24 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border focus:outline-none focus:ring-2 focus:ring-cyan-500 text-right ' + (bills50Invalid ? 'border-red-500 bg-red-900/20' : 'border-cyan-300 dark:border-cyan-700')}
+                                placeholder="0.00"
+                              />
+                            </div>
+                            
+                            {/* €20 */}
+                            <div className="flex items-center gap-2">
+                              <label className="text-cyan-200 text-sm w-16">€ 20</label>
+                              <span className="text-cyan-300 text-sm">x</span>
+                              <input
+                                type="number"
+                                min="0"
+                                value={bills20}
+                                onChange={(e) => {
+                                  setBills20(e.target.value);
+                                  setAmount20(((parseFloat(e.target.value) || 0) * 20).toFixed(2));
+                                }}
+                                className={'px-2 py-1 w-16 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border focus:outline-none focus:ring-2 focus:ring-cyan-500 text-center ' + (bills20Invalid ? 'border-red-500 bg-red-900/20' : 'border-cyan-300 dark:border-cyan-700')}
+                                placeholder="0"
+                              />
+                              <span className="text-cyan-300 text-sm">=</span>
+                              <span className="text-cyan-300 text-sm">€</span>
+                              <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={amount20}
+                                onChange={(e) => {
+                                  setAmount20(e.target.value);
+                                  const count = Math.floor((parseFloat(e.target.value) || 0) / 20);
+                                  setBills20(count.toString());
+                                }}
+                                className={'px-2 py-1 w-24 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border focus:outline-none focus:ring-2 focus:ring-cyan-500 text-right ' + (bills20Invalid ? 'border-red-500 bg-red-900/20' : 'border-cyan-300 dark:border-cyan-700')}
+                                placeholder="0.00"
+                              />
+                            </div>
+                            
+                            {/* €10 */}
+                            <div className="flex items-center gap-2">
+                              <label className="text-cyan-200 text-sm w-16">€ 10</label>
+                              <span className="text-cyan-300 text-sm">x</span>
+                              <input
+                                type="number"
+                                min="0"
+                                value={bills10}
+                                onChange={(e) => {
+                                  setBills10(e.target.value);
+                                  setAmount10(((parseFloat(e.target.value) || 0) * 10).toFixed(2));
+                                }}
+                                className={'px-2 py-1 w-16 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border focus:outline-none focus:ring-2 focus:ring-cyan-500 text-center ' + (bills10Invalid ? 'border-red-500 bg-red-900/20' : 'border-cyan-300 dark:border-cyan-700')}
+                                placeholder="0"
+                              />
+                              <span className="text-cyan-300 text-sm">=</span>
+                              <span className="text-cyan-300 text-sm">€</span>
+                              <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={amount10}
+                                onChange={(e) => {
+                                  setAmount10(e.target.value);
+                                  const count = Math.floor((parseFloat(e.target.value) || 0) / 10);
+                                  setBills10(count.toString());
+                                }}
+                                className={'px-2 py-1 w-24 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border focus:outline-none focus:ring-2 focus:ring-cyan-500 text-right ' + (bills10Invalid ? 'border-red-500 bg-red-900/20' : 'border-cyan-300 dark:border-cyan-700')}
+                                placeholder="0.00"
+                              />
+                            </div>
+                            
+                            {/* €5 */}
+                            <div className="flex items-center gap-2">
+                              <label className="text-cyan-200 text-sm w-16">€ 5</label>
+                              <span className="text-cyan-300 text-sm">x</span>
+                              <input
+                                type="number"
+                                min="0"
+                                value={bills5}
+                                onChange={(e) => {
+                                  setBills5(e.target.value);
+                                  setAmount5(((parseFloat(e.target.value) || 0) * 5).toFixed(2));
+                                }}
+                                className={'px-2 py-1 w-16 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border focus:outline-none focus:ring-2 focus:ring-cyan-500 text-center ' + (bills5Invalid ? 'border-red-500 bg-red-900/20' : 'border-cyan-300 dark:border-cyan-700')}
+                                placeholder="0"
+                              />
+                              <span className="text-cyan-300 text-sm">=</span>
+                              <span className="text-cyan-300 text-sm">€</span>
+                              <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={amount5}
+                                onChange={(e) => {
+                                  setAmount5(e.target.value);
+                                  const count = Math.floor((parseFloat(e.target.value) || 0) / 5);
+                                  setBills5(count.toString());
+                                }}
+                                className={'px-2 py-1 w-24 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border focus:outline-none focus:ring-2 focus:ring-cyan-500 text-right ' + (bills5Invalid ? 'border-red-500 bg-red-900/20' : 'border-cyan-300 dark:border-cyan-700')}
+                                placeholder="0.00"
+                              />
+                            </div>
+                            
+                            {/* Münzen */}
+                            <div className="flex items-center gap-2">
+                              <label className="text-cyan-200 text-sm w-16">Münzen</label>
+                              <span className="text-cyan-300 text-sm invisible">x</span>
+                              <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                max="4.99"
+                                value={munzen}
+                                onChange={(e) => {
+                                  const val = parseFloat(e.target.value) || 0;
+                                  if (val <= 4.99) setMunzen(e.target.value);
+                                }}
+                                placeholder={calculatedMunzen >= 0 && calculatedMunzen <= 4.99 ? calculatedMunzen.toFixed(2) : '0.00'}
+                                className={'px-2 py-1 w-24 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border focus:outline-none focus:ring-2 focus:ring-cyan-500 text-right ml-[60px] ' + (munzenInvalid || !safebagMatches ? 'border-red-500 bg-red-900/20' : 'border-cyan-300 dark:border-cyan-700')}
+                              />
+                              {munzenInvalid && <span className="text-red-400 text-xs">Max 4.99</span>}
+                            </div>
+                          </div>
+                          
+                          {/* Auto-calculate hint */}
+                          {calculatedMunzen >= 0 && calculatedMunzen <= 4.99 && !munzen && (
+                            <div className="text-xs text-amber-400 mt-2">
+                              💡 Tipp: Münzen sollten €{calculatedMunzen.toFixed(2)} sein
+                            </div>
+                          )}
+                          
+                          {/* Total and validation */}
+                          <div className="mt-4 pt-3 border-t border-cyan-400/30">
+                            <div className="flex justify-between items-center">
+                              <span className="text-cyan-200 font-medium">Safebag Gesamt:</span>
+                              <span className={'text-xl font-bold ' + (safebagMatches ? 'text-green-400' : 'text-red-400')}>
+                                €{safebagTotal.toFixed(2)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center mt-2">
+                              <span className="text-cyan-300 text-sm">Barumsatz (Soll):</span>
+                              <span className="text-cyan-100 font-medium">€{totalCashSales.toFixed(2)}</span>
+                            </div>
+                            {!safebagMatches && (
+                              <div className="mt-2 text-red-400 text-sm font-medium">
+                                ⚠️ Differenz: €{(safebagTotal - totalCashSales).toFixed(2)}
+                              </div>
+                            )}
+                            {safebagMatches && (
+                              <div className="mt-2 text-green-400 text-sm font-medium">
+                                ✓ Safebag stimmt überein
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 

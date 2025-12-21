@@ -16,6 +16,8 @@ export async function GET(request: Request, context: { params: Promise<{ organiz
       floatAmount: rest.initialFloat ?? 0,
       name: rest.name,
       _id: rest._id,
+      tresorEnabled: rest.tresorEnabled ?? false,
+      safebagEnabled: rest.safebagEnabled ?? false,
     }, { status: 200 });
   } catch (error) {
     console.error('Error fetching restaurant:', error);
@@ -36,6 +38,8 @@ export async function PATCH(request: Request, context: { params: Promise<{ organ
   const params = await context.params;
   const { organizationId, restaurant } = params;
   const body = await request.json();
+  
+  console.log('PATCH Restaurant - Body received:', body);
  
   try {
     await connect();
@@ -51,15 +55,23 @@ export async function PATCH(request: Request, context: { params: Promise<{ organ
       return NextResponse.json({ message: 'Restaurant not found' }, { status: 404 });
     }
     // Update all editable fields
-    rest.name = body.name ?? rest.name;
-    rest.teamTipPercentage = body.teamTipPercentage ?? rest.teamTipPercentage;
-    rest.initialFloat = body.initialFloat ?? rest.initialFloat;
-    rest.ecProofEnabled = body.ecProofEnabled ?? rest.ecProofEnabled;
-    rest.voucherProofEnabled = body.voucherProofEnabled ?? rest.voucherProofEnabled;
-    rest.discountProofEnabled = body.discountProofEnabled ?? rest.discountProofEnabled;
-    rest.stornoProofEnabled = body.stornoProofEnabled ?? rest.stornoProofEnabled;
+    if (body.name !== undefined) rest.name = body.name;
+    if (body.teamTipPercentage !== undefined) rest.teamTipPercentage = body.teamTipPercentage;
+    if (body.initialFloat !== undefined) rest.initialFloat = body.initialFloat;
+    if (body.ecProofEnabled !== undefined) rest.ecProofEnabled = body.ecProofEnabled;
+    if (body.voucherProofEnabled !== undefined) rest.voucherProofEnabled = body.voucherProofEnabled;
+    if (body.discountProofEnabled !== undefined) rest.discountProofEnabled = body.discountProofEnabled;
+    if (body.stornoProofEnabled !== undefined) rest.stornoProofEnabled = body.stornoProofEnabled;
+    if (body.tresorEnabled !== undefined) rest.tresorEnabled = body.tresorEnabled;
+    if (body.safebagEnabled !== undefined) rest.safebagEnabled = body.safebagEnabled;
+    
+    console.log('Restaurant before save:', rest.toObject());
+    
     await rest.save();
-    return NextResponse.json({ message: 'Restaurant updated successfully', restaurant: rest }, { status: 200 });
+    
+    console.log('Restaurant after save:', rest.toObject());
+    
+    return NextResponse.json({ message: 'Restaurant updated successfully', restaurant: rest.toObject() }, { status: 200 });
   } catch (error) {
     console.error('Error updating restaurant:', error);
     return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });

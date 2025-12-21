@@ -12,6 +12,12 @@ export interface Restaurant {
   organization: string | Organization;
   initialFloat?: number;
   teamTipPercentage?: number;
+  ecProofEnabled?: boolean;
+  voucherProofEnabled?: boolean;
+  discountProofEnabled?: boolean;
+  stornoProofEnabled?: boolean;
+  tresorEnabled?: boolean;
+  safebagEnabled?: boolean;
 }
 
 export interface User {

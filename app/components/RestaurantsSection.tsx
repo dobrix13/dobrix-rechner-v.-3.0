@@ -25,6 +25,8 @@ const RestaurantsSection: React.FC<RestaurantsSectionProps> = ({ user }) => {
   const [editRestName, setEditRestName] = useState<string>("");
   const [editRestFloat, setEditRestFloat] = useState<string>("");
   const [editRestTip, setEditRestTip] = useState<string>("");
+  const [editTresorEnabled, setEditTresorEnabled] = useState<boolean>(false);
+  const [editSafebagEnabled, setEditSafebagEnabled] = useState<boolean>(false);
 
   async function handleCreateRestaurant(e: React.FormEvent) {
     e.preventDefault();
@@ -55,7 +57,9 @@ const RestaurantsSection: React.FC<RestaurantsSectionProps> = ({ user }) => {
       await apiPatch(`/api/organizations/${orgId}/restaurants/${restId}?userId=${user._id}`, {
         name: editRestName,
         initialFloat: Number(editRestFloat),
-        teamTipPercentage: Number(editRestTip)
+        teamTipPercentage: Number(editRestTip),
+        tresorEnabled: editTresorEnabled,
+        safebagEnabled: editSafebagEnabled
       });
       setEditRestId(null);
       setRefresh(r => r + 1);
@@ -205,6 +209,28 @@ const RestaurantsSection: React.FC<RestaurantsSectionProps> = ({ user }) => {
                         )}
                       </div>
                     </div>
+                    {editRestId === rest._id && (
+                      <div className="flex flex-col gap-2 mt-3 pt-3 border-t border-cyan-400/30">
+                        <label className="flex items-center gap-2 text-sm text-cyan-200 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={editTresorEnabled}
+                            onChange={(e) => setEditTresorEnabled(e.target.checked)}
+                            className="w-4 h-4 text-cyan-500 border-cyan-400 rounded focus:ring-cyan-500"
+                          />
+                          <span>Tresorbestand aktivieren</span>
+                        </label>
+                        <label className="flex items-center gap-2 text-sm text-cyan-200 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={editSafebagEnabled}
+                            onChange={(e) => setEditSafebagEnabled(e.target.checked)}
+                            className="w-4 h-4 text-cyan-500 border-cyan-400 rounded focus:ring-cyan-500"
+                          />
+                          <span>Safebag Nr. aktivieren</span>
+                        </label>
+                      </div>
+                    )}
                     <div className="flex gap-2 justify-end mt-2">
                       {editRestId === rest._id ? (
                         <>
@@ -235,6 +261,8 @@ const RestaurantsSection: React.FC<RestaurantsSectionProps> = ({ user }) => {
                               setEditRestName(rest.name);
                               setEditRestFloat(rest.initialFloat?.toString() || "0");
                               setEditRestTip(rest.teamTipPercentage?.toString() || "0");
+                              setEditTresorEnabled(rest.tresorEnabled || false);
+                              setEditSafebagEnabled(rest.safebagEnabled || false);
                             }}
                           >
                             Edit
