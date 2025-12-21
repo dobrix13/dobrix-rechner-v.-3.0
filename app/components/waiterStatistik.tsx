@@ -42,10 +42,6 @@ const WaiterStatistik: React.FC<WaiterStatistikProps> = ({ user, onClose }) => {
     new Date().toISOString().split("T")[0]
   );
 
-  useEffect(() => {
-    fetchAbrechnungen();
-  }, [timeRange, selectedDate, fetchAbrechnungen]);
-
   const fetchAbrechnungen = useCallback(async () => {
     if (!user.userId || !user.restaurantId) return;
 
@@ -64,6 +60,10 @@ const WaiterStatistik: React.FC<WaiterStatistikProps> = ({ user, onClose }) => {
       setLoading(false);
     }
   }, [user.userId, user.restaurantId]);
+
+  useEffect(() => {
+    fetchAbrechnungen();
+  }, [timeRange, selectedDate, fetchAbrechnungen]);
 
   const getFilteredData = useCallback((): AbrechnungData[] => {
     const now = new Date(selectedDate);
