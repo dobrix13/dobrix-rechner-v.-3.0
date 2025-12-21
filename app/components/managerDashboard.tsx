@@ -1,8 +1,10 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo, useCallback, lazy, Suspense } from "react";
 import { RestaurantIcon, AbrechnungIcon, UserIcon } from "./adminIcons";
-import AbrechnungenSection from "./AbrechnungenSection";
-import AbrechnungForm from "./abrechnungForm";
 import { generatePdfReport } from "../utils/generatePdfReport";
+
+// Lazy load heavy components for better performance
+const AbrechnungenSection = lazy(() => import("./AbrechnungenSection"));
+const AbrechnungForm = lazy(() => import("./abrechnungForm"));
 
 const TABS = [
   { key: "tagesreport", icon: <RestaurantIcon className="w-7 h-7" />, label: "Tagesreport" },
@@ -69,52 +71,69 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
   const [amount10, setAmount10] = useState<string>("");
   const [amount5, setAmount5] = useState<string>("");
 
-  // Calculate safebag total
-  const safebagTotal = 
-    (parseFloat(bills500) || 0) * 500 +
-    (parseFloat(bills200) || 0) * 200 +
-    (parseFloat(bills100) || 0) * 100 +
-    (parseFloat(bills50) || 0) * 50 +
-    (parseFloat(bills20) || 0) * 20 +
-    (parseFloat(bills10) || 0) * 10 +
-    (parseFloat(bills5) || 0) * 5 +
-    (parseFloat(munzen) || 0);
-
-  const totalCashSales = dailyStats?.totalCash || 0;
-  const safebagMatches = Math.abs(safebagTotal - totalCashSales) < 0.01;
-
-  // Auto-calculate münzen if all bills are entered
-  const billsTotal = 
-    (parseFloat(bills500) || 0) * 500 +
-    (parseFloat(bills200) || 0) * 200 +
-    (parseFloat(bills100) || 0) * 100 +
-    (parseFloat(bills50) || 0) * 50 +
-    (parseFloat(bills20) || 0) * 20 +
-    (parseFloat(bills10) || 0) * 10 +
-    (parseFloat(bills5) || 0) * 5;
+  // Memoize expensive safebag calculations
+  const safebagCalculations = useMemo(() => {
+    const totalCashSales = dailyStats?.totalCash || 0;
+    const munzenValue = parseFloat(munzen) || 0;
+    
+    const billsTotal = 
+      (parseFloat(bills500) || 0) * 500 +
+      (parseFloat(bills200) || 0) * 200 +
+      (parseFloat(bills100) || 0) * 100 +
+      (parseFloat(bills50) || 0) * 50 +
+      (parseFloat(bills20) || 0) * 20 +
+      (parseFloat(bills10) || 0) * 10 +
+      (parseFloat(bills5) || 0) * 5;
+    
+    const safebagTotal = billsTotal + munzenValue;
+    const safebagMatches = Math.abs(safebagTotal - totalCashSales) < 0.01;
+    const calculatedMunzen = totalCashSales - billsTotal;
+    const munzenInvalid = munzenValue > 4.99;
+    
+    // Calculate remaining amounts for validation
+    const remaining500 = totalCashSales - (parseFloat(bills200) || 0) * 200 - (parseFloat(bills100) || 0) * 100 - (parseFloat(bills50) || 0) * 50 - (parseFloat(bills20) || 0) * 20 - (parseFloat(bills10) || 0) * 10 - (parseFloat(bills5) || 0) * 5 - munzenValue;
+    const remaining200 = totalCashSales - (parseFloat(bills500) || 0) * 500 - (parseFloat(bills100) || 0) * 100 - (parseFloat(bills50) || 0) * 50 - (parseFloat(bills20) || 0) * 20 - (parseFloat(bills10) || 0) * 10 - (parseFloat(bills5) || 0) * 5 - munzenValue;
+    const remaining100 = totalCashSales - (parseFloat(bills500) || 0) * 500 - (parseFloat(bills200) || 0) * 200 - (parseFloat(bills50) || 0) * 50 - (parseFloat(bills20) || 0) * 20 - (parseFloat(bills10) || 0) * 10 - (parseFloat(bills5) || 0) * 5 - munzenValue;
+    const remaining50 = totalCashSales - (parseFloat(bills500) || 0) * 500 - (parseFloat(bills200) || 0) * 200 - (parseFloat(bills100) || 0) * 100 - (parseFloat(bills20) || 0) * 20 - (parseFloat(bills10) || 0) * 10 - (parseFloat(bills5) || 0) * 5 - munzenValue;
+    const remaining20 = totalCashSales - (parseFloat(bills500) || 0) * 500 - (parseFloat(bills200) || 0) * 200 - (parseFloat(bills100) || 0) * 100 - (parseFloat(bills50) || 0) * 50 - (parseFloat(bills10) || 0) * 10 - (parseFloat(bills5) || 0) * 5 - munzenValue;
+    const remaining10 = totalCashSales - (parseFloat(bills500) || 0) * 500 - (parseFloat(bills200) || 0) * 200 - (parseFloat(bills100) || 0) * 100 - (parseFloat(bills50) || 0) * 50 - (parseFloat(bills20) || 0) * 20 - (parseFloat(bills5) || 0) * 5 - munzenValue;
+    const remaining5 = totalCashSales - (parseFloat(bills500) || 0) * 500 - (parseFloat(bills200) || 0) * 200 - (parseFloat(bills100) || 0) * 100 - (parseFloat(bills50) || 0) * 50 - (parseFloat(bills20) || 0) * 20 - (parseFloat(bills10) || 0) * 10 - munzenValue;
+    
+    return {
+      safebagTotal,
+      totalCashSales,
+      safebagMatches,
+      billsTotal,
+      calculatedMunzen,
+      munzenValue,
+      munzenInvalid,
+      bills500Invalid: (parseFloat(bills500) || 0) * 500 > remaining500 && remaining500 >= 0,
+      bills200Invalid: (parseFloat(bills200) || 0) * 200 > remaining200 && remaining200 >= 0,
+      bills100Invalid: (parseFloat(bills100) || 0) * 100 > remaining100 && remaining100 >= 0,
+      bills50Invalid: (parseFloat(bills50) || 0) * 50 > remaining50 && remaining50 >= 0,
+      bills20Invalid: (parseFloat(bills20) || 0) * 20 > remaining20 && remaining20 >= 0,
+      bills10Invalid: (parseFloat(bills10) || 0) * 10 > remaining10 && remaining10 >= 0,
+      bills5Invalid: (parseFloat(bills5) || 0) * 5 > remaining5 && remaining5 >= 0,
+    };
+  }, [bills500, bills200, bills100, bills50, bills20, bills10, bills5, munzen, dailyStats?.totalCash]);
   
-  const calculatedMunzen = totalCashSales - billsTotal;
-
-  // Validate münzen max 4.99
-  const munzenValue = parseFloat(munzen) || 0;
-  const munzenInvalid = munzenValue > 4.99;
-
-  // Validate if any field exceeds the remaining amount
-  const remaining500 = totalCashSales - (parseFloat(bills200) || 0) * 200 - (parseFloat(bills100) || 0) * 100 - (parseFloat(bills50) || 0) * 50 - (parseFloat(bills20) || 0) * 20 - (parseFloat(bills10) || 0) * 10 - (parseFloat(bills5) || 0) * 5 - munzenValue;
-  const remaining200 = totalCashSales - (parseFloat(bills500) || 0) * 500 - (parseFloat(bills100) || 0) * 100 - (parseFloat(bills50) || 0) * 50 - (parseFloat(bills20) || 0) * 20 - (parseFloat(bills10) || 0) * 10 - (parseFloat(bills5) || 0) * 5 - munzenValue;
-  const remaining100 = totalCashSales - (parseFloat(bills500) || 0) * 500 - (parseFloat(bills200) || 0) * 200 - (parseFloat(bills50) || 0) * 50 - (parseFloat(bills20) || 0) * 20 - (parseFloat(bills10) || 0) * 10 - (parseFloat(bills5) || 0) * 5 - munzenValue;
-  const remaining50 = totalCashSales - (parseFloat(bills500) || 0) * 500 - (parseFloat(bills200) || 0) * 200 - (parseFloat(bills100) || 0) * 100 - (parseFloat(bills20) || 0) * 20 - (parseFloat(bills10) || 0) * 10 - (parseFloat(bills5) || 0) * 5 - munzenValue;
-  const remaining20 = totalCashSales - (parseFloat(bills500) || 0) * 500 - (parseFloat(bills200) || 0) * 200 - (parseFloat(bills100) || 0) * 100 - (parseFloat(bills50) || 0) * 50 - (parseFloat(bills10) || 0) * 10 - (parseFloat(bills5) || 0) * 5 - munzenValue;
-  const remaining10 = totalCashSales - (parseFloat(bills500) || 0) * 500 - (parseFloat(bills200) || 0) * 200 - (parseFloat(bills100) || 0) * 100 - (parseFloat(bills50) || 0) * 50 - (parseFloat(bills20) || 0) * 20 - (parseFloat(bills5) || 0) * 5 - munzenValue;
-  const remaining5 = totalCashSales - (parseFloat(bills500) || 0) * 500 - (parseFloat(bills200) || 0) * 200 - (parseFloat(bills100) || 0) * 100 - (parseFloat(bills50) || 0) * 50 - (parseFloat(bills20) || 0) * 20 - (parseFloat(bills10) || 0) * 10 - munzenValue;
-
-  const bills500Invalid = (parseFloat(bills500) || 0) * 500 > remaining500 && remaining500 >= 0;
-  const bills200Invalid = (parseFloat(bills200) || 0) * 200 > remaining200 && remaining200 >= 0;
-  const bills100Invalid = (parseFloat(bills100) || 0) * 100 > remaining100 && remaining100 >= 0;
-  const bills50Invalid = (parseFloat(bills50) || 0) * 50 > remaining50 && remaining50 >= 0;
-  const bills20Invalid = (parseFloat(bills20) || 0) * 20 > remaining20 && remaining20 >= 0;
-  const bills10Invalid = (parseFloat(bills10) || 0) * 10 > remaining10 && remaining10 >= 0;
-  const bills5Invalid = (parseFloat(bills5) || 0) * 5 > remaining5 && remaining5 >= 0;
+  // Destructure for easier access
+  const {
+    safebagTotal,
+    totalCashSales,
+    safebagMatches,
+    billsTotal,
+    calculatedMunzen,
+    munzenValue,
+    munzenInvalid,
+    bills500Invalid,
+    bills200Invalid,
+    bills100Invalid,
+    bills50Invalid,
+    bills20Invalid,
+    bills10Invalid,
+    bills5Invalid,
+  } = safebagCalculations;
 
   // Validate manager has restaurantId
   if (!user.restaurantId) {
@@ -133,15 +152,21 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
       fetchOrganizationInfo();
     }
   }, [user.restaurantId, user.organizationId]);
-
-  // Fetch daily stats when date changes
+  
+  // Cleanup barcode scanner on unmount
   useEffect(() => {
-    if (activeTab === "tagesreport" && selectedDate) {
-      fetchDailyStats();
-    }
-  }, [selectedDate, activeTab]);
+    return () => {
+      if (barcodeReaderRef.current) {
+        try {
+          barcodeReaderRef.current.reset();
+        } catch (err) {
+          console.error('Error cleaning up barcode scanner:', err);
+        }
+      }
+    };
+  }, []);
 
-  const fetchWaiters = async () => {
+  const fetchWaiters = useCallback(async () => {
     try {
       const res = await fetch(`/api/users`);
       if (res.ok) {
@@ -158,9 +183,9 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
     } catch (error: any) {
       console.error("Error fetching waiters:", error);
     }
-  };
+  }, [user.restaurantId]);
 
-  const fetchDailyStats = async () => {
+  const fetchDailyStats = useCallback(async () => {
     setLoading(true);
     try {
       // Parse selectedDate as UTC directly (selectedDate is in YYYY-MM-DD format)
@@ -228,7 +253,14 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user.restaurantId, selectedDate]);
+
+  // Fetch daily stats when date changes
+  useEffect(() => {
+    if (activeTab === "tagesreport" && selectedDate) {
+      fetchDailyStats();
+    }
+  }, [selectedDate, activeTab, fetchDailyStats]);
 
   const handleView = (abrechnung: any) => {
     if (viewingId === abrechnung._id) {
@@ -295,6 +327,10 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
       if (res.ok) {
         const data = await res.json();
         setRestaurantInfo(data);
+        // Prefill tresorbestand from restaurant settings
+        if (data.tresorEnabled && data.tresorBestand) {
+          setTresorbestand(data.tresorBestand.toString());
+        }
       }
     } catch (error: any) {
       console.error("Error fetching restaurant info:", error);
@@ -364,7 +400,8 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
         bills5: parseFloat(bills5) || 0,
         munzen: parseFloat(munzen) || 0,
         total: safebagTotal
-      } : undefined
+      } : undefined,
+      managerName: user.name
     };
 
     const filename = generatePdfReport(reportData);
@@ -997,10 +1034,16 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
             )}
 
             {activeTab === "abrechnungen" && (
-              <AbrechnungenSection 
-                user={{ ...user, role: "manager", email: user.email || "" }} 
-                filterByRestaurant={user.restaurantId}
-              />
+              <Suspense fallback={
+                <div className="flex justify-center items-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400"></div>
+                </div>
+              }>
+                <AbrechnungenSection 
+                  user={{ ...user, role: "manager", email: user.email || "" }} 
+                  filterByRestaurant={user.restaurantId}
+                />
+              </Suspense>
             )}
 
             {activeTab === "neue_abrechnung" && (

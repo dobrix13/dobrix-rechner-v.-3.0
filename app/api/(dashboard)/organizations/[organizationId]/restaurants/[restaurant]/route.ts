@@ -18,6 +18,7 @@ export async function GET(request: Request, context: { params: Promise<{ organiz
       _id: rest._id,
       tresorEnabled: rest.tresorEnabled ?? false,
       safebagEnabled: rest.safebagEnabled ?? false,
+      tresorBestand: rest.tresorBestand ?? 0,
     }, { status: 200 });
   } catch (error) {
     console.error('Error fetching restaurant:', error);
@@ -64,6 +65,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ organ
     if (body.stornoProofEnabled !== undefined) rest.stornoProofEnabled = body.stornoProofEnabled;
     if (body.tresorEnabled !== undefined) rest.tresorEnabled = body.tresorEnabled;
     if (body.safebagEnabled !== undefined) rest.safebagEnabled = body.safebagEnabled;
+    if (body.tresorBestand !== undefined) rest.tresorBestand = body.tresorBestand;
     
     console.log('Restaurant before save:', rest.toObject());
     

@@ -1,5 +1,5 @@
 // AbrechnungenSection: Handles abrechnungen tab UI and logic
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Abrechnung, User, Organization, Restaurant } from "../types/models";
 import { SelectInput } from "./SelectInput";
 import { useOrganizations } from "../hooks/useOrganizations";
@@ -32,62 +32,70 @@ const AbrechnungenSection: React.FC<AbrechnungenSectionProps> = ({ user, filterB
     refresh
   });
 
-  // Filter by date range and user
-  let filteredAbrechnungen = rawAbrechnungen.filter(ab => {
-    if (selectedUser && ab.userId !== selectedUser) return false;
-    
-    if (startDate || endDate) {
-      const abDate = ab.date ? new Date(ab.date) : null;
-      if (!abDate) return false;
+  // Memoize filtered and sorted abrechnungen
+  const filteredAbrechnungen = useMemo(() => {
+    let filtered = rawAbrechnungen.filter(ab => {
+      if (selectedUser && ab.userId !== selectedUser) return false;
       
-      if (startDate) {
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
-        if (abDate < start) return false;
+      if (startDate || endDate) {
+        const abDate = ab.date ? new Date(ab.date) : null;
+        if (!abDate) return false;
+        
+        if (startDate) {
+          const start = new Date(startDate);
+          start.setHours(0, 0, 0, 0);
+          if (abDate < start) return false;
+        }
+        
+        if (endDate) {
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+          if (abDate > end) return false;
+        }
       }
       
-      if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        if (abDate > end) return false;
+      return true;
+    });
+    
+    // Sort
+    const sorted = [...filtered].sort((a, b) => {
+      let comparison = 0;
+      
+      if (sortBy === "date") {
+        const dateA = a.date ? new Date(a.date).getTime() : 0;
+        const dateB = b.date ? new Date(b.date).getTime() : 0;
+        comparison = dateA - dateB;
+      } else if (sortBy === "name") {
+        const userA = allUsers.find(u => u._id === a.userId);
+        const userB = allUsers.find(u => u._id === b.userId);
+        const nameA = userA?.name || "";
+        const nameB = userB?.name || "";
+        comparison = nameA.localeCompare(nameB);
+      } else if (sortBy === "umsatz") {
+        comparison = (a.totalSales || 0) - (b.totalSales || 0);
       }
-    }
+      
+      return sortOrder === "asc" ? comparison : -comparison;
+    });
     
-    return true;
-  });
+    return sorted;
+  }, [rawAbrechnungen, selectedUser, startDate, endDate, sortBy, sortOrder, allUsers]);
+  
+  // Memoize totals calculation
+  const totals = useMemo(() => {
+    return filteredAbrechnungen.reduce(
+      (acc, ab) => ({
+        totalSales: acc.totalSales + (ab.totalSales || 0),
+        teamTips: acc.teamTips + (ab.teamTipsPaid || 0),
+        bargeld: acc.bargeld + (ab.salesInCash || 0),
+        privatTips: acc.privatTips + (ab.privatTips || 0),
+        count: acc.count + 1,
+      }),
+      { totalSales: 0, teamTips: 0, bargeld: 0, privatTips: 0, count: 0 }
+    );
+  }, [filteredAbrechnungen]);
 
-  // Sort
-  const sortedAbrechnungen = [...filteredAbrechnungen].sort((a, b) => {
-    let comparison = 0;
-    
-    if (sortBy === "date") {
-      const dateA = a.date ? new Date(a.date).getTime() : 0;
-      const dateB = b.date ? new Date(b.date).getTime() : 0;
-      comparison = dateA - dateB;
-    } else if (sortBy === "name") {
-      const userA = allUsers.find(u => u._id === a.userId);
-      const userB = allUsers.find(u => u._id === b.userId);
-      const nameA = userA?.name || "";
-      const nameB = userB?.name || "";
-      comparison = nameA.localeCompare(nameB);
-    } else if (sortBy === "umsatz") {
-      comparison = (a.totalSales || 0) - (b.totalSales || 0);
-    }
-    
-    return sortOrder === "asc" ? comparison : -comparison;
-  });
-
-  // Calculate totals
-  const totals = sortedAbrechnungen.reduce(
-    (acc, ab) => ({
-      totalSales: acc.totalSales + (ab.totalSales || 0),
-      teamTips: acc.teamTips + (ab.teamTipsPaid || 0),
-      bargeld: acc.bargeld + (ab.salesInCash || 0),
-    }),
-    { totalSales: 0, teamTips: 0, bargeld: 0 }
-  );
-
-  const abrechnungen = sortedAbrechnungen;
+  const abrechnungen = filteredAbrechnungen;
 
   // Inline edit state
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -297,8 +305,8 @@ const AbrechnungenSection: React.FC<AbrechnungenSectionProps> = ({ user, filterB
                 liveTeamTip = Number(((totalSalesEdit * teamTipPercentage) / 100).toFixed(2));
               }
               return (
+                <React.Fragment key={ab._id || idx}>
                 <tr 
-                  key={ab._id || idx} 
                   onClick={() => handleEdit(ab)}
                   className={`border-b border-cyan-900/30 cursor-pointer transition ${
                     isEditing 
@@ -355,7 +363,43 @@ const AbrechnungenSection: React.FC<AbrechnungenSectionProps> = ({ user, filterB
                     )}
                   </td>
                 </tr>
-              );
+                {isEditing && (
+                  <tr className="bg-cyan-500/10">
+                    <td colSpan={5} className="px-2 py-3">
+                      <div className="flex justify-end gap-2">
+                        <button 
+                          className="px-4 py-2 border-2 border-cyan-400/40 bg-cyan-900/30 backdrop-blur-sm hover:bg-cyan-800/40 hover:border-cyan-400/60 rounded-lg text-sm font-medium transition-all duration-200 text-cyan-100" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSave();
+                          }}
+                        >
+                          ✓ Speichern
+                        </button>
+                        <button 
+                          className="px-4 py-2 border-2 border-cyan-400/40 bg-cyan-900/30 backdrop-blur-sm hover:bg-cyan-800/40 hover:border-cyan-400/60 rounded-lg text-sm font-medium transition-all duration-200 text-cyan-100" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCancel();
+                          }}
+                        >
+                          ✕ Abbrechen
+                        </button>
+                        <button 
+                          className="px-4 py-2 border-2 border-red-400/40 bg-red-900/30 backdrop-blur-sm hover:bg-red-800/40 hover:border-red-400/60 rounded-lg text-sm font-medium transition-all duration-200 text-red-100" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(ab._id);
+                          }}
+                        >
+                          🗑 Löschen
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
+            );
             })}
             {/* Totals Row */}
             {abrechnungen.length > 0 && (
@@ -376,31 +420,9 @@ const AbrechnungenSection: React.FC<AbrechnungenSectionProps> = ({ user, filterB
             )}
           </tbody>
         </table>
-        {editingId && (
-          <div className="flex justify-end gap-2 mt-3">
-            <button 
-              className="px-4 py-2 border-2 border-cyan-400/40 bg-cyan-900/30 backdrop-blur-sm hover:bg-cyan-800/40 hover:border-cyan-400/60 rounded-lg text-sm font-medium transition-all duration-200 text-cyan-100" 
-              onClick={handleSave}
-            >
-              ✓ Speichern
-            </button>
-            <button 
-              className="px-4 py-2 border-2 border-cyan-400/40 bg-cyan-900/30 backdrop-blur-sm hover:bg-cyan-800/40 hover:border-cyan-400/60 rounded-lg text-sm font-medium transition-all duration-200 text-cyan-100" 
-              onClick={handleCancel}
-            >
-              ✕ Abbrechen
-            </button>
-            <button 
-              className="px-4 py-2 border-2 border-red-400/40 bg-red-900/30 backdrop-blur-sm hover:bg-red-800/40 hover:border-red-400/60 rounded-lg text-sm font-medium transition-all duration-200 text-red-100" 
-              onClick={() => handleDelete(editingId)}
-            >
-              🗑 Löschen
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
 };
 
-export default AbrechnungenSection;
+export default React.memo(AbrechnungenSection);

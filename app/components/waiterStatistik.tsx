@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -44,9 +44,9 @@ const WaiterStatistik: React.FC<WaiterStatistikProps> = ({ user, onClose }) => {
 
   useEffect(() => {
     fetchAbrechnungen();
-  }, [timeRange, selectedDate, user.userId, user.restaurantId]);
+  }, [timeRange, selectedDate, fetchAbrechnungen]);
 
-  const fetchAbrechnungen = async () => {
+  const fetchAbrechnungen = useCallback(async () => {
     if (!user.userId || !user.restaurantId) return;
 
     setLoading(true);
@@ -63,9 +63,9 @@ const WaiterStatistik: React.FC<WaiterStatistikProps> = ({ user, onClose }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user.userId, user.restaurantId]);
 
-  const getFilteredData = (): AbrechnungData[] => {
+  const getFilteredData = useCallback((): AbrechnungData[] => {
     const now = new Date(selectedDate);
     return abrechnungen.filter((ab) => {
       const abDate = new Date(ab.geschaefts_tag || ab.date);
@@ -89,9 +89,9 @@ const WaiterStatistik: React.FC<WaiterStatistikProps> = ({ user, onClose }) => {
       }
       return false;
     });
-  };
+  }, [abrechnungen, timeRange, selectedDate]);
 
-  const getWeekdayStats = (): DayStats[] => {
+  const getWeekdayStats = useCallback((): DayStats[] => {
     const weekdays = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
     const weekdayIndices = [1, 2, 3, 4, 5, 6, 0]; // Monday=1, Sunday=0
     const stats: { [key: string]: { totalSales: number; totalTips: number; privateTips: number; count: number } } = {};
@@ -125,9 +125,9 @@ const WaiterStatistik: React.FC<WaiterStatistikProps> = ({ user, onClose }) => {
         count: data.count,
       };
     });
-  };
+  }, [getFilteredData]);
 
-  const getTotalStats = () => {
+  const getTotalStats = useCallback(() => {
     const filteredData = getFilteredData();
     const totalSales = filteredData.reduce((sum, ab) => sum + ab.totalSales, 0);
     const totalTips = filteredData.reduce((sum, ab) => sum + ab.privatTips + ab.teamTipsPaid, 0);
@@ -136,7 +136,7 @@ const WaiterStatistik: React.FC<WaiterStatistikProps> = ({ user, onClose }) => {
     const privateTipPercentage = totalSales > 0 ? (privateTips / totalSales) * 100 : 0;
 
     return { totalSales, totalTips, privateTips, avgTipPercentage, privateTipPercentage, count: filteredData.length };
-  };
+  }, [getFilteredData]);
 
   const generateWaiterPDF = async () => {
     const filteredData = getFilteredData().sort((a, b) => {

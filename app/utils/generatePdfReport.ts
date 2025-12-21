@@ -35,6 +35,7 @@ interface ReportData {
 		munzen: number;
 		total: number;
 	};
+	managerName?: string;
 }
 
 export function generatePdfReport(data: ReportData) {
@@ -117,44 +118,69 @@ export function generatePdfReport(data: ReportData) {
 	// Get the Y position after the table
 	const finalY = (doc as any).lastAutoTable.finalY || currentY + 50;
 
-	// Totals section
+	// Two-column layout: Gesamt (left) and Tresorbestand (right)
 	currentY = finalY + 10;
+	const startY = currentY;
+	const columnWidth = (pageWidth - 2 * margin) / 2;
+	const leftColX = margin;
+	const rightColX = margin + columnWidth + 5; // 5mm gap between columns
 	
-	doc.setFontSize(12);
+	// LEFT COLUMN - Gesamt section
+	let leftY = startY;
+	doc.setFontSize(10);
 	doc.setFont('helvetica', 'bold');
-	doc.text('Gesamt:', margin, currentY);
+	doc.text('Gesamt:', leftColX, leftY);
 	
-	currentY += 8;
+	leftY += 7;
+	doc.setFontSize(9);
 	doc.setFont('helvetica', 'normal');
-	doc.text(`Tages Umsatz:`, margin + 10, currentY);
-	doc.text(`€${data.totals.umsatz.toFixed(2)}`, margin + 80, currentY, { align: 'right' });
+	doc.text(`Tages Umsatz:`, leftColX + 5, leftY);
+	doc.text(`€${data.totals.umsatz.toFixed(2)}`, leftColX + columnWidth - 10, leftY, { align: 'right' });
 	
-	currentY += 7;
-	doc.text(`Bargeld:`, margin + 10, currentY);
-	doc.text(`€${data.totals.bargeld.toFixed(2)}`, margin + 80, currentY, { align: 'right' });
+	leftY += 6;
+	doc.text(`Bargeld:`, leftColX + 5, leftY);
+	doc.text(`€${data.totals.bargeld.toFixed(2)}`, leftColX + columnWidth - 10, leftY, { align: 'right' });
 	
-	currentY += 7;
-	doc.text(`Team Tip:`, margin + 10, currentY);
-	doc.text(`€${data.totals.teamTip.toFixed(2)}`, margin + 80, currentY, { align: 'right' });
+	leftY += 6;
+	doc.text(`Team Tip:`, leftColX + 5, leftY);
+	doc.text(`€${data.totals.teamTip.toFixed(2)}`, leftColX + columnWidth - 10, leftY, { align: 'right' });
 
-	// Add Tresorbestand and Safebag if provided
+	// RIGHT COLUMN - Tresorbestand section with verification
+	let rightY = startY;
+	let maxY = leftY; // Track the maximum Y to continue after both columns
+	
 	if (data.tresorbestand) {
-		currentY += 7;
-		doc.text(`Tresorbestand:`, margin + 10, currentY);
-		doc.text(`€${parseFloat(data.tresorbestand).toFixed(2)}`, margin + 80, currentY, { align: 'right' });
+		doc.setFontSize(10);
+		doc.setFont('helvetica', 'bold');
+		const tresorAmount = parseFloat(data.tresorbestand).toFixed(2);
+		doc.text(`Tresorbestand €${tresorAmount}`, rightColX, rightY);
+		
+		rightY += 7;
+		doc.setFont('helvetica', 'normal');
+		doc.setFontSize(9);
+		const managerName = data.managerName || '______________________';
+		doc.text(`überprüft von ${managerName}`, rightColX, rightY);
+		
+		rightY += 10;
+		doc.text('Unterschrift:', rightColX, rightY);
+		doc.setLineWidth(0.25);
+		doc.line(rightColX + 25, rightY, rightColX + columnWidth - 10, rightY);
+		
+		maxY = Math.max(leftY, rightY);
 	}
+	
+	// Separator line after both columns
+	currentY = maxY + 10;
+	doc.setLineWidth(0.1);
+	doc.line(margin, currentY, pageWidth - margin, currentY);
 
 	if (data.safebagNr) {
-		currentY += 7;
-		doc.text(`Safebag Nr.:`, margin + 10, currentY);
-		doc.text(data.safebagNr, margin + 80, currentY, { align: 'right' });
-		
 		// Add safebag breakdown if provided
 		if (data.safebagBreakdown) {
 			currentY += 10;
 			doc.setFontSize(10);
 			doc.setFont('helvetica', 'bold');
-			doc.text('Safebag Inhalt:', margin + 10, currentY);
+			doc.text(`Safebag Inhalt (Safebag Nr. ${data.safebagNr})`, margin, currentY);
 			doc.setFont('helvetica', 'normal');
 			doc.setFontSize(9);
 			
@@ -205,19 +231,33 @@ export function generatePdfReport(data: ReportData) {
 			}
 			
 			currentY += 5;
+			doc.setFontSize(10);
 			doc.setFont('helvetica', 'bold');
 			doc.text('Safebag Gesamt:', leftCol, currentY);
 			doc.text(`€${breakdown.total.toFixed(2)}`, rightCol, currentY);
 			doc.setFont('helvetica', 'normal');
+			
+			// Witness signature for safebag
+			currentY += 10;
+			doc.setFontSize(9);
+			doc.text('Zeuge:', margin, currentY);
+			currentY += 5;
+			doc.text('Name:', margin, currentY);
+			doc.setLineWidth(0.25);
+			doc.line(margin + 15, currentY, margin + 70, currentY);
+			doc.text('Unterschrift:', margin + 80, currentY);
+			doc.line(margin + 110, currentY, margin + 165, currentY);
 		}
 	}
 
-	// Signature line
+	// Manager signature line at bottom
 	currentY = 260; // Fixed position near bottom of page
 	
-	doc.setFontSize(10);
-	doc.text('Unterschrift Schichtleiter:', margin, currentY);
-	doc.line(margin + 55, currentY, margin + 120, currentY); // Signature line
+	doc.setFontSize(9);
+	const managerNameBottom = data.managerName || '______________________';
+	doc.text(`Unterschrift Schichtleiter: ${managerNameBottom}`, margin, currentY);
+	doc.setLineWidth(0.25);
+	doc.line(margin, currentY + 2, margin + 100, currentY + 2); // Signature line
 
 	// Footer with generation timestamp
 	doc.setFontSize(8);

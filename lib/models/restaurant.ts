@@ -15,6 +15,7 @@ export interface IRestaurant extends Document {
 	stornoProofEnabled?: boolean; // Ob die Storno-Belegpflicht aktiviert ist
 	tresorEnabled?: boolean; // Ob Tresorbestand-Eingabe aktiviert ist
 	safebagEnabled?: boolean; // Ob Safebag-Nummer-Eingabe aktiviert ist
+    tresorBestand?: number; // Standard Tresorbestand-Betrag in Euro
 }
 
 const RestaurantSchema: Schema<IRestaurant> = new Schema<IRestaurant>(
@@ -65,7 +66,12 @@ const RestaurantSchema: Schema<IRestaurant> = new Schema<IRestaurant>(
 		safebagEnabled: {
 			type: Boolean,
 			default: false
-		}
+        },
+        tresorBestand: {
+            type: Number,
+            default: 0,
+            min: 0
+        }
     },
     { timestamps: true, strict: true }
 );

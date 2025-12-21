@@ -27,6 +27,8 @@ const RestaurantsSection: React.FC<RestaurantsSectionProps> = ({ user }) => {
   const [editRestTip, setEditRestTip] = useState<string>("");
   const [editTresorEnabled, setEditTresorEnabled] = useState<boolean>(false);
   const [editSafebagEnabled, setEditSafebagEnabled] = useState<boolean>(false);
+  const [editTresorBestand, setEditTresorBestand] = useState<string>("");
+
 
   async function handleCreateRestaurant(e: React.FormEvent) {
     e.preventDefault();
@@ -59,7 +61,9 @@ const RestaurantsSection: React.FC<RestaurantsSectionProps> = ({ user }) => {
         initialFloat: Number(editRestFloat),
         teamTipPercentage: Number(editRestTip),
         tresorEnabled: editTresorEnabled,
-        safebagEnabled: editSafebagEnabled
+        safebagEnabled: editSafebagEnabled,
+        tresorBestand: Number(editTresorBestand) || 0,
+        tresorBestand: Number(editTresorBestand) || 0
       });
       setEditRestId(null);
       setRefresh(r => r + 1);
@@ -220,6 +224,20 @@ const RestaurantsSection: React.FC<RestaurantsSectionProps> = ({ user }) => {
                           />
                           <span>Tresorbestand aktivieren</span>
                         </label>
+                        {editTresorEnabled && (
+                          <div className="ml-6 flex items-center gap-2">
+                            <label className="text-sm text-cyan-200">Standard Tresorbestand (€):</label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={editTresorBestand}
+                              onChange={(e) => setEditTresorBestand(e.target.value)}
+                              className="px-2 py-1 w-24 rounded bg-cyan-900/30 border border-cyan-400/40 text-cyan-100 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                              placeholder="0.00"
+                            />
+                          </div>
+                        )}
                         <label className="flex items-center gap-2 text-sm text-cyan-200 cursor-pointer">
                           <input
                             type="checkbox"
@@ -263,6 +281,7 @@ const RestaurantsSection: React.FC<RestaurantsSectionProps> = ({ user }) => {
                               setEditRestTip(rest.teamTipPercentage?.toString() || "0");
                               setEditTresorEnabled(rest.tresorEnabled || false);
                               setEditSafebagEnabled(rest.safebagEnabled || false);
+                              setEditTresorBestand((rest as any).tresorBestand?.toString() || "0");
                             }}
                           >
                             Edit
