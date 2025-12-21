@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface WaiterStatistikProps {
   user: {
@@ -72,7 +74,9 @@ const WaiterStatistik: React.FC<WaiterStatistikProps> = ({ user, onClose }) => {
         return abDate.toISOString().split("T")[0] === selectedDate;
       } else if (timeRange === "week") {
         const weekStart = new Date(now);
-        weekStart.setDate(now.getDate() - now.getDay());
+        const dayOfWeek = now.getDay();
+        const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        weekStart.setDate(now.getDate() - daysToMonday);
         weekStart.setHours(0, 0, 0, 0);
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekStart.getDate() + 7);
@@ -88,7 +92,8 @@ const WaiterStatistik: React.FC<WaiterStatistikProps> = ({ user, onClose }) => {
   };
 
   const getWeekdayStats = (): DayStats[] => {
-    const weekdays = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+    const weekdays = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
+    const weekdayIndices = [1, 2, 3, 4, 5, 6, 0]; // Monday=1, Sunday=0
     const stats: { [key: string]: { totalSales: number; totalTips: number; privateTips: number; count: number } } = {};
 
     const filteredData = getFilteredData();
@@ -96,7 +101,7 @@ const WaiterStatistik: React.FC<WaiterStatistikProps> = ({ user, onClose }) => {
     filteredData.forEach((ab) => {
       const date = new Date(ab.geschaefts_tag || ab.date);
       const dayIndex = date.getDay();
-      const dayName = weekdays[dayIndex];
+      const dayName = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"][dayIndex];
 
       if (!stats[dayName]) {
         stats[dayName] = { totalSales: 0, totalTips: 0, privateTips: 0, count: 0 };
@@ -131,6 +136,89 @@ const WaiterStatistik: React.FC<WaiterStatistikProps> = ({ user, onClose }) => {
     const privateTipPercentage = totalSales > 0 ? (privateTips / totalSales) * 100 : 0;
 
     return { totalSales, totalTips, privateTips, avgTipPercentage, privateTipPercentage, count: filteredData.length };
+  };
+
+  const generateWaiterPDF = async () => {
+    const filteredData = getFilteredData().sort((a, b) => {
+      const dateA = new Date(a.geschaefts_tag || a.date);
+      const dateB = new Date(b.geschaefts_tag || b.date);
+      return dateA.getTime() - dateB.getTime();
+    });
+
+    const totalStats = getTotalStats();
+    
+    const timeRangeText = timeRange === 'day' ? 'Tag' : timeRange === 'week' ? 'Woche' : 'Monat';
+    const dateText = new Date(selectedDate).toLocaleDateString('de-DE');
+
+    try {
+      const doc = new jsPDF();
+
+      // Title
+      doc.setFontSize(18);
+      doc.text(`Kellner Statistik - ${user.name}`, 14, 20);
+      
+      doc.setFontSize(12);
+      doc.text(`Zeitraum: ${timeRangeText} (${dateText})`, 14, 28);
+      doc.text(`Generiert: ${new Date().toLocaleString('de-DE')}`, 14, 35);
+
+      // Summary
+      doc.setFontSize(14);
+      doc.text('Zusammenfassung', 14, 45);
+      doc.setFontSize(10);
+      doc.text(`Anzahl Schichten: ${totalStats.count}`, 14, 52);
+      doc.text(`Gesamtumsatz: ${totalStats.totalSales.toFixed(2)} €`, 14, 58);
+      doc.text(`Privates Trinkgeld: ${totalStats.privateTips.toFixed(2)} € (${totalStats.privateTipPercentage.toFixed(1)}%)`, 14, 64);
+
+      // Table data
+      const tableData = filteredData.map((ab) => {
+        const date = new Date(ab.geschaefts_tag || ab.date);
+        return [
+          date.toLocaleDateString('de-DE'),
+          ab.totalSales.toFixed(2) + ' €',
+          ab.privatTips.toFixed(2) + ' €',
+          ab.teamTipsPaid.toFixed(2) + ' €',
+          ab.salesInCash.toFixed(2) + ' €',
+          ((ab.privatTips / ab.totalSales) * 100).toFixed(1) + '%',
+          ab.station || '-'
+        ];
+      });
+
+      // Add totals row
+      tableData.push([
+        'GESAMT',
+        totalStats.totalSales.toFixed(2) + ' €',
+        totalStats.privateTips.toFixed(2) + ' €',
+        (totalStats.totalTips - totalStats.privateTips).toFixed(2) + ' €',
+        filteredData.reduce((sum, ab) => sum + ab.salesInCash, 0).toFixed(2) + ' €',
+        totalStats.privateTipPercentage.toFixed(1) + '%',
+        ''
+      ]);
+
+      autoTable(doc, {
+        startY: 72,
+        head: [['Datum', 'Umsatz', 'Priv. TG', 'Team TG', 'Bargeld', 'TG %', 'Station']],
+        body: tableData,
+        theme: 'grid',
+        headStyles: { fillColor: [6, 182, 212], textColor: 255 },
+        footStyles: { fillColor: [220, 252, 231], textColor: 0, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [240, 253, 250] },
+        styles: { fontSize: 9 },
+        didParseCell: function(data: any) {
+          if (data.row.index === tableData.length - 1) {
+            data.cell.styles.fillColor = [6, 182, 212];
+            data.cell.styles.textColor = 255;
+            data.cell.styles.fontStyle = 'bold';
+          }
+        }
+      });
+
+      // Save PDF
+      const fileName = `Kellner_Statistik_${user.name}_${dateText.replace(/\./g, '-')}.pdf`;
+      doc.save(fileName);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Fehler beim Erstellen des PDF-Reports');
+    }
   };
 
   const getChartData = () => {
@@ -366,19 +454,20 @@ const WaiterStatistik: React.FC<WaiterStatistikProps> = ({ user, onClose }) => {
                           </div>
 
                           {/* Chart SVG */}
-                          <svg className="absolute left-12 right-12 top-0 bottom-0 w-[calc(100%-6rem)] h-full">
+                          <svg className="absolute left-12 right-12 top-0 bottom-0 w-[calc(100%-6rem)] h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
                             {/* Grid lines */}
                             {[0, 1, 2, 3, 4].map(i => {
-                              const yPos = (i * 25) + '%';
+                              const yPos = i * 25;
                               return (
                                 <line
                                   key={i}
                                   x1="0"
                                   y1={yPos}
-                                  x2="100%"
+                                  x2="100"
                                   y2={yPos}
                                   stroke="rgba(0, 255, 247, 0.1)"
-                                  strokeWidth="1"
+                                  strokeWidth="0.5"
+                                  vectorEffect="non-scaling-stroke"
                                 />
                               );
                             })}
@@ -399,13 +488,13 @@ const WaiterStatistik: React.FC<WaiterStatistikProps> = ({ user, onClose }) => {
                             <path
                               d={
                                 chartData.length > 0
-                                  ? 'M 0 ' + (192 - ((chartData[0].value - minSales) / range) * 192) + ' ' +
+                                  ? 'M 0 ' + (100 - ((chartData[0].value - minSales) / range) * 100) + ' ' +
                                     chartData.map((d, i) => {
                                       const x = (i / (chartData.length - 1 || 1)) * 100;
-                                      const y = 192 - ((d.value - minSales) / range) * 192;
-                                      return 'L ' + x + '% ' + y;
+                                      const y = 100 - ((d.value - minSales) / range) * 100;
+                                      return 'L ' + x + ' ' + y;
                                     }).join(' ') +
-                                    ' L 100% 192 L 0 192 Z'
+                                    ' L 100 100 L 0 100 Z'
                                   : ''
                               }
                               fill="url(#areaGradient)"
@@ -415,75 +504,83 @@ const WaiterStatistik: React.FC<WaiterStatistikProps> = ({ user, onClose }) => {
                             <path
                               d={
                                 chartData.length > 0
-                                  ? 'M 0 ' + (192 - ((chartData[0].tips - minSales) / range) * 192) + ' ' +
+                                  ? 'M 0 ' + (100 - ((chartData[0].tips - minSales) / range) * 100) + ' ' +
                                     chartData.map((d, i) => {
                                       const x = (i / (chartData.length - 1 || 1)) * 100;
-                                      const y = 192 - ((d.tips - minSales) / range) * 192;
-                                      return 'L ' + x + '% ' + y;
+                                      const y = 100 - ((d.tips - minSales) / range) * 100;
+                                      return 'L ' + x + ' ' + y;
                                     }).join(' ') +
-                                    ' L 100% 192 L 0 192 Z'
+                                    ' L 100 100 L 0 100 Z'
                                   : ''
                               }
                               fill="url(#tipsAreaGradient)"
                             />
 
                             {/* Sales Line chart (thicker 3px) */}
-                            <polyline
-                              fill="none"
-                              stroke="rgb(34, 211, 238)"
-                              strokeWidth="3"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              points={chartData.map((d, i) => {
-                                const x = (i / (chartData.length - 1 || 1)) * 100;
-                                const y = 100 - ((d.value - minSales) / range) * 100;
-                                return x + '%,' + y + '%';
-                              }).join(' ')}
-                            />
+                            {chartData.length > 1 && (
+                              <polyline
+                                fill="none"
+                                stroke="rgb(34, 211, 238)"
+                                strokeWidth="1.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                vectorEffect="non-scaling-stroke"
+                                points={chartData.map((d, i) => {
+                                  const x = (i / (chartData.length - 1)) * 100;
+                                  const y = 100 - ((d.value - minSales) / range) * 100;
+                                  return x + ',' + y;
+                                }).join(' ')}
+                              />
+                            )}
 
                             {/* Tips Line chart (thicker 3px) */}
-                            <polyline
-                              fill="none"
-                              stroke="rgb(34, 197, 94)"
-                              strokeWidth="3"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              points={chartData.map((d, i) => {
-                                const x = (i / (chartData.length - 1 || 1)) * 100;
-                                const y = 100 - ((d.tips - minSales) / range) * 100;
-                                return x + '%,' + y + '%';
-                              }).join(' ')}
-                            />
+                            {chartData.length > 1 && (
+                              <polyline
+                                fill="none"
+                                stroke="rgb(34, 197, 94)"
+                                strokeWidth="1.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                vectorEffect="non-scaling-stroke"
+                                points={chartData.map((d, i) => {
+                                  const x = (i / (chartData.length - 1)) * 100;
+                                  const y = 100 - ((d.tips - minSales) / range) * 100;
+                                  return x + ',' + y;
+                                }).join(' ')}
+                              />
+                            )}
 
                             {/* Tip Percentage Line chart (2px) */}
-                            <polyline
-                              fill="none"
-                              stroke="rgb(251, 191, 36)"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              points={chartData.map((d, i) => {
-                                const x = (i / (chartData.length - 1 || 1)) * 100;
-                                const y = 100 - ((d.tipPercent - minTipPercent) / tipPercentRange) * 100;
-                                return x + '%,' + y + '%';
-                              }).join(' ')}
-                            />
+                            {chartData.length > 1 && (
+                              <polyline
+                                fill="none"
+                                stroke="rgb(251, 191, 36)"
+                                strokeWidth="1"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                vectorEffect="non-scaling-stroke"
+                                points={chartData.map((d, i) => {
+                                  const x = (i / (chartData.length - 1)) * 100;
+                                  const y = 100 - ((d.tipPercent - minTipPercent) / tipPercentRange) * 100;
+                                  return x + ',' + y;
+                                }).join(' ')}
+                              />
+                            )}
 
                             {/* Sales Data points */}
                             {chartData.map((d, i) => {
                               const x = (i / (chartData.length - 1 || 1)) * 100;
                               const y = 100 - ((d.value - minSales) / range) * 100;
-                              const xPos = x + '%';
-                              const yPos = y + '%';
                               return (
-                                <g key={`sales-${i}`}>
+                                <g key={'sales-' + i}>
                                   <circle
-                                    cx={xPos}
-                                    cy={yPos}
-                                    r="4"
+                                    cx={x}
+                                    cy={y}
+                                    r="1.5"
                                     fill="rgb(34, 211, 238)"
                                     stroke="rgb(30, 40, 60)"
-                                    strokeWidth="2"
+                                    strokeWidth="0.5"
+                                    vectorEffect="non-scaling-stroke"
                                     className="hover:r-6 transition-all cursor-pointer"
                                   />
                                   <title>{d.label + ': Umsatz ' + d.value.toFixed(2) + '€'}</title>
@@ -495,17 +592,16 @@ const WaiterStatistik: React.FC<WaiterStatistikProps> = ({ user, onClose }) => {
                             {chartData.map((d, i) => {
                               const x = (i / (chartData.length - 1 || 1)) * 100;
                               const y = 100 - ((d.tips - minSales) / range) * 100;
-                              const xPos = `${x}%`;
-                              const yPos = `${y}%`;
                               return (
-                                <g key={`tips-${i}`}>
+                                <g key={'tips-' + i}>
                                   <circle
-                                    cx={xPos}
-                                    cy={yPos}
-                                    r="4"
+                                    cx={x}
+                                    cy={y}
+                                    r="1.5"
                                     fill="rgb(34, 197, 94)"
                                     stroke="rgb(30, 40, 60)"
-                                    strokeWidth="2"
+                                    strokeWidth="0.5"
+                                    vectorEffect="non-scaling-stroke"
                                     className="hover:r-6 transition-all cursor-pointer"
                                   />
                                   <title>{d.label + ': Trinkgeld ' + d.tips.toFixed(2) + '€ (' + d.tipPercent.toFixed(1) + '%)'}</title>
@@ -517,17 +613,16 @@ const WaiterStatistik: React.FC<WaiterStatistikProps> = ({ user, onClose }) => {
                             {chartData.map((d, i) => {
                               const x = (i / (chartData.length - 1 || 1)) * 100;
                               const y = 100 - ((d.tipPercent - minTipPercent) / tipPercentRange) * 100;
-                              const xPos = `${x}%`;
-                              const yPos = `${y}%`;
                               return (
-                                <g key={`percent-${i}`}>
+                                <g key={'percent-' + i}>
                                   <circle
-                                    cx={xPos}
-                                    cy={yPos}
-                                    r="3"
+                                    cx={x}
+                                    cy={y}
+                                    r="1"
                                     fill="rgb(251, 191, 36)"
                                     stroke="rgb(30, 40, 60)"
-                                    strokeWidth="1.5"
+                                    strokeWidth="0.3"
+                                    vectorEffect="non-scaling-stroke"
                                     className="hover:r-5 transition-all cursor-pointer"
                                   />
                                   <title>{d.label + ': ' + d.tipPercent.toFixed(1) + '% Trinkgeld-Anteil'}</title>
@@ -564,6 +659,16 @@ const WaiterStatistik: React.FC<WaiterStatistikProps> = ({ user, onClose }) => {
                             <div className="w-3 h-3 rounded-full bg-amber-400"></div>
                             <span className="text-cyan-300">Trinkgeld %</span>
                           </div>
+                        </div>
+
+                        {/* PDF Report Button */}
+                        <div className="flex justify-center pt-4">
+                          <button
+                            onClick={() => generateWaiterPDF()}
+                            className="px-6 py-3 rounded-lg bg-gradient-to-r from-cyan-500/60 to-cyan-400/80 hover:from-cyan-500/80 hover:to-cyan-400/100 text-white font-semibold transition-all duration-200 backdrop-blur-sm border-2 border-cyan-400/50 hover:border-cyan-300/70 shadow-lg hover:shadow-cyan-500/50"
+                          >
+                            📄 PDF Report Exportieren
+                          </button>
                         </div>
                       </div>
                     );

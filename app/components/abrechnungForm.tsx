@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import NumericKeyboard from "./NumericKeyboard";
+import { createWorker } from 'tesseract.js';
 
 interface ExistingAbrechnungData {
 	_id?: string;
@@ -44,6 +45,9 @@ const AbrechnungForm: React.FC<AbrechnungFormProps> = ({
 	const [initialFloat, setInitialFloat] = useState<number>(0); // New state for initial float
 	const [station, setStation] = useState<string>(existingAbrechnung?.station || ""); // Station number/name
 	const [activeKeyboard, setActiveKeyboard] = useState<"totalSales" | "cashSales" | "anfangsbestand" | "endbestand" | "restaurantFloat" | null>(null);
+	const [ocrProcessing, setOcrProcessing] = useState(false);
+	const totalSalesFileRef = useRef<HTMLInputElement>(null);
+	const cashSalesFileRef = useRef<HTMLInputElement>(null);
 
 
 	useEffect(() => {
@@ -98,6 +102,97 @@ const AbrechnungForm: React.FC<AbrechnungFormProps> = ({
 		cashSales !== "" && restaurantFloat !== "" && totalSales !== ""
 			? Number(cashSales) + calculatedTeamTips + Number(restaurantFloat)
 			: "";
+
+	const handleOCR = async (file: File, fieldType: 'totalSales' | 'cashSales') => {
+		setOcrProcessing(true);
+		setError(null);
+		try {
+			const worker = await createWorker('deu');
+			const { data: { text } } = await worker.recognize(file);
+			await worker.terminate();
+
+			// Process the OCR text
+			const lines = text.split('\n');
+			let extractedValue: number | null = null;
+
+			if (fieldType === 'totalSales') {
+				// Look for "Einnahme Gesamt" or similar patterns
+				for (let i = 0; i < lines.length; i++) {
+					const line = lines[i].toLowerCase();
+					if (line.includes('einnahme') && line.includes('gesamt')) {
+						// Extract number from this line or next line
+						const numberMatch = lines[i].match(/[\d.,]+/);
+						if (numberMatch) {
+							extractedValue = parseFloat(numberMatch[0].replace(',', '.').replace(/\./g, ''));
+							if (numberMatch[0].includes(',')) {
+								const parts = numberMatch[0].split(',');
+								extractedValue = parseFloat(parts[0].replace(/\./g, '') + '.' + parts[1]);
+							}
+							break;
+						} else if (i + 1 < lines.length) {
+							const nextLineMatch = lines[i + 1].match(/[\d.,]+/);
+							if (nextLineMatch) {
+								extractedValue = parseFloat(nextLineMatch[0].replace(',', '.').replace(/\./g, ''));
+								if (nextLineMatch[0].includes(',')) {
+									const parts = nextLineMatch[0].split(',');
+									extractedValue = parseFloat(parts[0].replace(/\./g, '') + '.' + parts[1]);
+								}
+								break;
+							}
+						}
+					}
+				}
+			} else if (fieldType === 'cashSales') {
+				// Look for "Gesamt (Bar)" or similar patterns
+				for (let i = 0; i < lines.length; i++) {
+					const line = lines[i].toLowerCase();
+					if ((line.includes('gesamt') && line.includes('bar')) || line.includes('gesamt(bar)')) {
+						// Extract number from this line or next line
+						const numberMatch = lines[i].match(/[\d.,]+/);
+						if (numberMatch) {
+							extractedValue = parseFloat(numberMatch[0].replace(',', '.').replace(/\./g, ''));
+							if (numberMatch[0].includes(',')) {
+								const parts = numberMatch[0].split(',');
+								extractedValue = parseFloat(parts[0].replace(/\./g, '') + '.' + parts[1]);
+							}
+							break;
+						} else if (i + 1 < lines.length) {
+							const nextLineMatch = lines[i + 1].match(/[\d.,]+/);
+							if (nextLineMatch) {
+								extractedValue = parseFloat(nextLineMatch[0].replace(',', '.').replace(/\./g, ''));
+								if (nextLineMatch[0].includes(',')) {
+									const parts = nextLineMatch[0].split(',');
+									extractedValue = parseFloat(parts[0].replace(/\./g, '') + '.' + parts[1]);
+								}
+								break;
+							}
+						}
+					}
+				}
+			}
+
+			if (extractedValue !== null && !isNaN(extractedValue)) {
+				if (fieldType === 'totalSales') {
+					setTotalSales(extractedValue);
+				} else {
+					setCashSales(extractedValue);
+				}
+			} else {
+				setError('Konnte keinen Wert im Bild finden. Bitte versuchen Sie es erneut.');
+			}
+		} catch (err) {
+			console.error('OCR Error:', err);
+			setError('Fehler beim Scannen des Bildes. Bitte versuchen Sie es erneut.');
+		}
+		setOcrProcessing(false);
+	};
+
+	const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>, fieldType: 'totalSales' | 'cashSales') => {
+		const file = event.target.files?.[0];
+		if (file) {
+			handleOCR(file, fieldType);
+		}
+	};
 
 	// Calculate privatTips - default anfangsbestand to 0 if only endbestand is entered
 	const privatTips =
@@ -231,26 +326,78 @@ const AbrechnungForm: React.FC<AbrechnungFormProps> = ({
 						<label className="text-cyan-200 font-medium mb-1">
 							Gesamtumsatz:
 						</label>
-						<input
-						type="text"
-						value={totalSales === "" ? "" : String(totalSales)}
-						onFocus={() => setActiveKeyboard("totalSales")}
-						readOnly
-						required
-						className="px-3 py-2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-cyan-300 dark:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 cursor-pointer"
-						/>
+						<div className="relative">
+							<input
+							type="text"
+							value={totalSales === "" ? "" : String(totalSales)}
+							onFocus={() => setActiveKeyboard("totalSales")}
+							readOnly
+							required
+							className="px-3 py-2 pr-10 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-cyan-300 dark:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 cursor-pointer w-full"
+							/>
+							<input
+								type="file"
+								accept="image/*"
+								capture="environment"
+								ref={totalSalesFileRef}
+								onChange={(e) => handleFileSelect(e, 'totalSales')}
+								className="hidden"
+							/>
+							<button
+								type="button"
+								onClick={() => totalSalesFileRef.current?.click()}
+								disabled={ocrProcessing}
+								className="absolute right-2 top-1/2 -translate-y-1/2 text-cyan-400 hover:text-cyan-300 disabled:opacity-50"
+								title="Beleg scannen"
+							>
+								<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+									<path fillRule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+								</svg>
+							</button>
+						</div>
 					</div>
 					<div className="flex flex-col gap-2 w-full max-w-xs mt-4">
 						<label className="text-cyan-200 font-medium mb-1">Barumsatz:</label>
-						<input
-						type="text"
-						value={cashSales === "" ? "" : String(cashSales)}
-						onFocus={() => setActiveKeyboard("cashSales")}
-						readOnly
-						required
-						className="px-3 py-2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-cyan-300 dark:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 cursor-pointer"
-						/>
+						<div className="relative">
+							<input
+							type="text"
+							value={cashSales === "" ? "" : String(cashSales)}
+							onFocus={() => setActiveKeyboard("cashSales")}
+							readOnly
+							required
+							className="px-3 py-2 pr-10 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-cyan-300 dark:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 cursor-pointer w-full"
+							/>
+							<input
+								type="file"
+								accept="image/*"
+								capture="environment"
+								ref={cashSalesFileRef}
+								onChange={(e) => handleFileSelect(e, 'cashSales')}
+								className="hidden"
+							/>
+							<button
+								type="button"
+								onClick={() => cashSalesFileRef.current?.click()}
+								disabled={ocrProcessing}
+								className="absolute right-2 top-1/2 -translate-y-1/2 text-cyan-400 hover:text-cyan-300 disabled:opacity-50"
+								title="Beleg scannen"
+							>
+								<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+									<path fillRule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+								</svg>
+							</button>
+						</div>
 					</div>
+					{/* OCR Processing indicator */}
+					{ocrProcessing && (
+						<div className="flex items-center justify-center gap-2 w-full max-w-xs mt-4 text-cyan-300">
+							<svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+								<circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+								<path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+							</svg>
+							<span>Scanne Beleg...</span>
+						</div>
+					)}
 					{/* Team tips percent and calculated value */}
 					<div className="flex flex-col gap-2 w-full max-w-xs mt-4">
 						<div className="mt-2 text-cyan-300 font-medium">

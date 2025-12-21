@@ -17,6 +17,11 @@ const AbrechnungenSection: React.FC<AbrechnungenSectionProps> = ({ user, filterB
   const [selectedRest, setSelectedRest] = useState<string>(filterByRestaurant || "");
   const [selectedUser, setSelectedUser] = useState<string>("");
   const [refresh, setRefresh] = useState<number>(0);
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+  const [sortBy, setSortBy] = useState<"date" | "name" | "umsatz">("date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  
   const { organizations } = useOrganizations();
   const { restaurants: allRestaurants } = useRestaurants("");
   const { restaurants } = useRestaurants(selectedOrg);
@@ -26,11 +31,63 @@ const AbrechnungenSection: React.FC<AbrechnungenSectionProps> = ({ user, filterB
     restaurantId: selectedRest,
     refresh
   });
-  const abrechnungen = rawAbrechnungen.sort((a, b) => {
-    const dateA = a.date ? new Date(a.date).getTime() : 0;
-    const dateB = b.date ? new Date(b.date).getTime() : 0;
-    return dateA - dateB; // ascending order
+
+  // Filter by date range and user
+  let filteredAbrechnungen = rawAbrechnungen.filter(ab => {
+    if (selectedUser && ab.userId !== selectedUser) return false;
+    
+    if (startDate || endDate) {
+      const abDate = ab.date ? new Date(ab.date) : null;
+      if (!abDate) return false;
+      
+      if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        if (abDate < start) return false;
+      }
+      
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        if (abDate > end) return false;
+      }
+    }
+    
+    return true;
   });
+
+  // Sort
+  const sortedAbrechnungen = [...filteredAbrechnungen].sort((a, b) => {
+    let comparison = 0;
+    
+    if (sortBy === "date") {
+      const dateA = a.date ? new Date(a.date).getTime() : 0;
+      const dateB = b.date ? new Date(b.date).getTime() : 0;
+      comparison = dateA - dateB;
+    } else if (sortBy === "name") {
+      const userA = allUsers.find(u => u._id === a.userId);
+      const userB = allUsers.find(u => u._id === b.userId);
+      const nameA = userA?.name || "";
+      const nameB = userB?.name || "";
+      comparison = nameA.localeCompare(nameB);
+    } else if (sortBy === "umsatz") {
+      comparison = (a.totalSales || 0) - (b.totalSales || 0);
+    }
+    
+    return sortOrder === "asc" ? comparison : -comparison;
+  });
+
+  // Calculate totals
+  const totals = sortedAbrechnungen.reduce(
+    (acc, ab) => ({
+      totalSales: acc.totalSales + (ab.totalSales || 0),
+      teamTips: acc.teamTips + (ab.teamTipsPaid || 0),
+      bargeld: acc.bargeld + (ab.salesInCash || 0),
+    }),
+    { totalSales: 0, teamTips: 0, bargeld: 0 }
+  );
+
+  const abrechnungen = sortedAbrechnungen;
 
   // Inline edit state
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -92,6 +149,7 @@ const AbrechnungenSection: React.FC<AbrechnungenSectionProps> = ({ user, filterB
 
   return (
     <div className="w-full">
+      {/* Filters */}
       <div className="flex flex-wrap gap-2 mb-4">
         {!filterByRestaurant && (
           <>
@@ -126,6 +184,95 @@ const AbrechnungenSection: React.FC<AbrechnungenSectionProps> = ({ user, filterB
           className="min-w-[120px] max-w-[220px] border-cyan-400 focus:ring-cyan-500"
         />
       </div>
+
+      {/* Date Range Filters */}
+      <div className="flex flex-wrap gap-3 mb-4">
+        <div className="flex flex-col gap-1">
+          <label className="text-cyan-200 text-xs font-medium">Von:</label>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="px-3 py-1.5 rounded-lg bg-cyan-900/30 backdrop-blur-sm border-2 border-cyan-400/30 text-cyan-100 hover:border-cyan-400/50 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all duration-200 text-sm"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-cyan-200 text-xs font-medium">Bis:</label>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="px-3 py-1.5 rounded-lg bg-cyan-900/30 backdrop-blur-sm border-2 border-cyan-400/30 text-cyan-100 hover:border-cyan-400/50 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all duration-200 text-sm"
+          />
+        </div>
+        {(startDate || endDate) && (
+          <div className="flex items-end">
+            <button
+              onClick={() => { setStartDate(""); setEndDate(""); }}
+              className="px-3 py-1.5 rounded-lg bg-red-900/30 backdrop-blur-sm border-2 border-red-400/30 text-red-100 hover:bg-red-800/40 hover:border-red-400/50 transition-all duration-200 text-sm font-medium"
+            >
+              Filter löschen
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Sorting Controls */}
+      <div className="flex flex-wrap gap-2 mb-4 items-center">
+        <span className="text-cyan-200 text-sm font-medium">Sortieren nach:</span>
+        <button
+          onClick={() => {
+            if (sortBy === "date") {
+              setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+            } else {
+              setSortBy("date");
+              setSortOrder("desc");
+            }
+          }}
+          className={`px-3 py-1.5 rounded-lg backdrop-blur-sm border-2 transition-all duration-200 text-sm font-medium ${
+            sortBy === "date"
+              ? "bg-cyan-500/30 border-cyan-400/50 text-cyan-100"
+              : "bg-cyan-900/20 border-cyan-400/30 text-cyan-200 hover:bg-cyan-900/30"
+          }`}
+        >
+          Datum {sortBy === "date" && (sortOrder === "asc" ? "↑" : "↓")}
+        </button>
+        <button
+          onClick={() => {
+            if (sortBy === "name") {
+              setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+            } else {
+              setSortBy("name");
+              setSortOrder("asc");
+            }
+          }}
+          className={`px-3 py-1.5 rounded-lg backdrop-blur-sm border-2 transition-all duration-200 text-sm font-medium ${
+            sortBy === "name"
+              ? "bg-cyan-500/30 border-cyan-400/50 text-cyan-100"
+              : "bg-cyan-900/20 border-cyan-400/30 text-cyan-200 hover:bg-cyan-900/30"
+          }`}
+        >
+          Name {sortBy === "name" && (sortOrder === "asc" ? "↑" : "↓")}
+        </button>
+        <button
+          onClick={() => {
+            if (sortBy === "umsatz") {
+              setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+            } else {
+              setSortBy("umsatz");
+              setSortOrder("desc");
+            }
+          }}
+          className={`px-3 py-1.5 rounded-lg backdrop-blur-sm border-2 transition-all duration-200 text-sm font-medium ${
+            sortBy === "umsatz"
+              ? "bg-cyan-500/30 border-cyan-400/50 text-cyan-100"
+              : "bg-cyan-900/20 border-cyan-400/30 text-cyan-200 hover:bg-cyan-900/30"
+          }`}
+        >
+          Umsatz {sortBy === "umsatz" && (sortOrder === "asc" ? "↑" : "↓")}
+        </button>
+      </div>
+
       <div className="overflow-x-auto">
         <table className="min-w-full bg-transparent text-white rounded shadow text-xs">
           <thead>
@@ -210,6 +357,23 @@ const AbrechnungenSection: React.FC<AbrechnungenSectionProps> = ({ user, filterB
                 </tr>
               );
             })}
+            {/* Totals Row */}
+            {abrechnungen.length > 0 && (
+              <tr className="bg-cyan-500/20 border-t-2 border-cyan-400/50 font-bold">
+                <td className="px-2 py-2 text-xs" colSpan={2}>
+                  Gesamt ({abrechnungen.length} Einträge)
+                </td>
+                <td className="px-2 py-2 text-xs">
+                  {totals.totalSales.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}
+                </td>
+                <td className="px-2 py-2 text-xs">
+                  {totals.teamTips.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}
+                </td>
+                <td className="px-2 py-2 text-xs">
+                  {totals.bargeld.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
         {editingId && (
