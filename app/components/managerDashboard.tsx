@@ -3,7 +3,6 @@ import { RestaurantIcon, AbrechnungIcon, UserIcon } from "./adminIcons";
 import AbrechnungenSection from "./AbrechnungenSection";
 import AbrechnungForm from "./abrechnungForm";
 import { generatePdfReport } from "../utils/generatePdfReport";
-import { Html5Qrcode } from "html5-qrcode";
 
 const TABS = [
   { key: "tagesreport", icon: <RestaurantIcon className="w-7 h-7" />, label: "Tagesreport" },
@@ -47,8 +46,8 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
   const [pdfNotification, setPdfNotification] = useState<string | null>(null);
   const [tresorbestand, setTresorbestand] = useState<string>("");
   const [safebagNr, setSafebagNr] = useState<string>("");
-  const [isScanningBarcode, setIsScanningBarcode] = useState(false);
-  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const [barcodeProcessing, setBarcodeProcessing] = useState(false);
+  const barcodeFileRef = useRef<HTMLInputElement>(null);
   
   // Safebag money breakdown
   const [bills500, setBills500] = useState<string>("");
@@ -605,96 +604,62 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
                             maxLength={20}
                             className="px-3 py-2 pr-12 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-cyan-300 dark:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 font-mono w-full"
                           />
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              if (isScanningBarcode) {
-                                // Stop scanning
-                                if (scannerRef.current) {
-                                  try {
-                                    await scannerRef.current.stop();
-                                    scannerRef.current.clear();
-                                    scannerRef.current = null;
-                                  } catch (err) {
-                                    console.error('Error stopping scanner:', err);
-                                  }
-                                }
-                                setIsScanningBarcode(false);
-                              } else {
-                                // Start scanning
-                                setIsScanningBarcode(true);
+                          <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            ref={barcodeFileRef}
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                setBarcodeProcessing(true);
                                 try {
-                                  const scanner = new Html5Qrcode("barcode-reader");
-                                  scannerRef.current = scanner;
+                                  // Dynamically import tesseract only when needed
+                                  const { createWorker } = await import('tesseract.js');
+                                  const worker = await createWorker('eng');
+                                  const { data: { text } } = await worker.recognize(file);
+                                  await worker.terminate();
                                   
-                                  await scanner.start(
-                                    { facingMode: "environment" },
-                                    {
-                                      fps: 10,
-                                      qrbox: { width: 250, height: 150 }
-                                    },
-                                    (decodedText) => {
-                                      // Extract only digits from barcode
-                                      const digits = decodedText.replace(/\D/g, '').slice(0, 20);
-                                      setSafebagNr(digits);
-                                      
-                                      // Stop scanning after successful scan
-                                      scanner.stop().then(() => {
-                                        scanner.clear();
-                                        scannerRef.current = null;
-                                        setIsScanningBarcode(false);
-                                      }).catch(err => {
-                                        console.error('Error stopping scanner:', err);
-                                        setIsScanningBarcode(false);
-                                      });
-                                    },
-                                    (errorMessage) => {
-                                      // Scanning error - ignore, just keep scanning
-                                    }
-                                  );
+                                  // Extract digits from recognized text
+                                  const digits = text.replace(/\D/g, '').slice(0, 20);
+                                  if (digits.length >= 10) {
+                                    setSafebagNr(digits);
+                                  } else {
+                                    alert('Keine gültige Barcode-Nummer gefunden. Bitte erneut versuchen.');
+                                  }
                                 } catch (err) {
-                                  console.error('Error starting barcode scanner:', err);
-                                  alert('Kamera konnte nicht gestartet werden. Bitte Berechtigungen prüfen.');
-                                  setIsScanningBarcode(false);
+                                  console.error('Barcode scan error:', err);
+                                  alert('Fehler beim Scannen. Bitte erneut versuchen.');
+                                }
+                                setBarcodeProcessing(false);
+                                // Reset file input
+                                if (barcodeFileRef.current) {
+                                  barcodeFileRef.current.value = '';
                                 }
                               }
                             }}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-cyan-500 hover:text-cyan-400 transition-colors"
+                            className="hidden"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => barcodeFileRef.current?.click()}
+                            disabled={barcodeProcessing}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-cyan-500 hover:text-cyan-400 transition-colors disabled:opacity-50"
                             title="Barcode scannen"
                           >
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
-                            </svg>
+                            {barcodeProcessing ? (
+                              <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                            ) : (
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
+                              </svg>
+                            )}
                           </button>
                         </div>
-                        
-                        {/* Barcode Scanner Display */}
-                        {isScanningBarcode && (
-                          <div className="mt-3 p-3 bg-zinc-900 rounded-lg border border-cyan-500">
-                            <div className="flex justify-between items-center mb-2">
-                              <span className="text-cyan-300 text-sm font-medium">Barcode scannen...</span>
-                              <button
-                                onClick={async () => {
-                                  if (scannerRef.current) {
-                                    try {
-                                      await scannerRef.current.stop();
-                                      scannerRef.current.clear();
-                                      scannerRef.current = null;
-                                    } catch (err) {
-                                      console.error('Error stopping scanner:', err);
-                                    }
-                                  }
-                                  setIsScanningBarcode(false);
-                                }}
-                                className="text-red-400 hover:text-red-300 text-sm font-medium"
-                              >
-                                Abbrechen
-                              </button>
-                            </div>
-                            <div id="barcode-reader" className="w-full rounded overflow-hidden"></div>
-                          </div>
-                        )}
                         
                         <div className="text-xs text-cyan-400 mt-1">
                           {safebagNr.length}/20 Ziffern
