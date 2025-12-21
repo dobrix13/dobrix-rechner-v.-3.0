@@ -62,7 +62,6 @@ const RestaurantsSection: React.FC<RestaurantsSectionProps> = ({ user }) => {
         teamTipPercentage: Number(editRestTip),
         tresorEnabled: editTresorEnabled,
         safebagEnabled: editSafebagEnabled,
-        tresorBestand: Number(editTresorBestand) || 0,
         tresorBestand: Number(editTresorBestand) || 0
       });
       setEditRestId(null);
