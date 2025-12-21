@@ -88,10 +88,9 @@ const AbrechnungenSection: React.FC<AbrechnungenSectionProps> = ({ user, filterB
         totalSales: acc.totalSales + (ab.totalSales || 0),
         teamTips: acc.teamTips + (ab.teamTipsPaid || 0),
         bargeld: acc.bargeld + (ab.salesInCash || 0),
-        privatTips: acc.privatTips + (ab.privatTips || 0),
         count: acc.count + 1,
       }),
-      { totalSales: 0, teamTips: 0, bargeld: 0, privatTips: 0, count: 0 }
+      { totalSales: 0, teamTips: 0, bargeld: 0, count: 0 }
     );
   }, [filteredAbrechnungen]);
 
