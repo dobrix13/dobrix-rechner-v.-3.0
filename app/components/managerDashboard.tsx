@@ -614,14 +614,29 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
                               if (file) {
                                 setBarcodeProcessing(true);
                                 try {
-                                  // Dynamically import tesseract only when needed
-                                  const { createWorker } = await import('tesseract.js');
-                                  const worker = await createWorker('eng');
-                                  const { data: { text } } = await worker.recognize(file);
-                                  await worker.terminate();
+                                  // Use ZXing library for proper barcode scanning
+                                  const { BrowserMultiFormatReader } = await import('@zxing/library');
                                   
-                                  // Extract digits from recognized text
-                                  const digits = text.replace(/\D/g, '').slice(0, 20);
+                                  // Create image from file
+                                  const imageUrl = URL.createObjectURL(file);
+                                  const img = new Image();
+                                  
+                                  await new Promise((resolve, reject) => {
+                                    img.onload = resolve;
+                                    img.onerror = reject;
+                                    img.src = imageUrl;
+                                  });
+                                  
+                                  // Scan barcode
+                                  const codeReader = new BrowserMultiFormatReader();
+                                  const result = await codeReader.decodeFromImageElement(img);
+                                  
+                                  // Clean up
+                                  URL.revokeObjectURL(imageUrl);
+                                  
+                                  // Extract only digits from barcode
+                                  const digits = result.getText().replace(/\D/g, '').slice(0, 20);
+                                  
                                   if (digits.length >= 10) {
                                     setSafebagNr(digits);
                                   } else {
@@ -629,7 +644,7 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
                                   }
                                 } catch (err) {
                                   console.error('Barcode scan error:', err);
-                                  alert('Fehler beim Scannen. Bitte erneut versuchen.');
+                                  alert('Barcode konnte nicht erkannt werden. Bitte stellen Sie sicher, dass das Bild klar ist und versuchen Sie es erneut.');
                                 }
                                 setBarcodeProcessing(false);
                                 // Reset file input
